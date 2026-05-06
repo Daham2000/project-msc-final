@@ -1,20 +1,48 @@
 # Smart City Dashboard Flask Backend
 
-This project is a Python Flask backend for a Smart City Dashboard. It trains machine learning models on the provided citizen activity dataset and exposes APIs for:
+This project is a Flask backend for a Smart City Dashboard with:
 
-- Predicting a citizen's household energy consumption
-- Predicting a citizen's carbon footprint
-- Returning eco-friendly and healthy lifestyle recommendations
-- Aggregating multiple citizen predictions into citywide energy and carbon forecasts
-- Returning dashboard summary data for a frontend
+- machine learning predictions for household energy consumption and carbon footprint
+- citizen registration and login
+- admin login and user management
+- admin announcements for citizens
+- dashboard summary and sustainability recommendations
+
+## Core Features
+
+### Machine learning
+
+- Predict `Home_Energy_Consumption_kWh`
+- Predict `Carbon_Footprint_kgCO2`
+- Suggest eco-friendly, energy-saving, and healthy habits
+- Aggregate multiple citizen predictions into citywide energy and carbon forecasts
+
+### Authentication and roles
+
+- `Citizen` users can register and log in
+- `Admin` users can log in, view all registered users, and publish announcements
+- Authenticated users access dashboard prediction endpoints with bearer tokens
+
+### Announcements
+
+- Admins can create announcements for citizens
+- Citizens can view announcements sent by the admin
+
+## Tech Stack
+
+- Flask
+- MongoDB with `pymongo`
+- Pure-Python ML models
+- `itsdangerous` for token signing
+- `werkzeug.security` for password hashing
 
 ## Dataset
 
-The backend is configured to load this CSV by default:
+The backend loads this CSV by default:
 
 `C:\Users\Htown\Documents\MSC Programe\Research Project\smart_city_citizen_activity.csv`
 
-If you move the dataset, update `DATASET_PATH` in [app/config.py](/C:/Users/Htown/Documents/MSC%20Programe/Research%20Project/project/app/config.py:1).
+If needed, update the dataset path in [app/config.py](</C:/Users/Htown/Documents/MSC Programe/Research Project/project/app/config.py:1>).
 
 ## Project Structure
 
@@ -25,73 +53,158 @@ project/
 │   ├── config.py
 │   ├── routes.py
 │   └── services/
+│       ├── auth_service.py
 │       ├── data_utils.py
+│       ├── database_service.py
 │       ├── ml.py
 │       ├── recommendations.py
 │       └── smart_city_service.py
+├── .env.example
 ├── requirements.txt
 ├── run.py
 └── README.md
 ```
 
-## How It Works
+## Configuration
 
-Two regression models are trained when the Flask app starts:
+Set these environment variables if you want to override the defaults:
 
-1. `Energy model`
-Predicts `Home_Energy_Consumption_kWh` from age, gender, transport mode, work pattern, activity pattern, steps, calories, sleep, and social behavior.
+```powershell
+$env:SECRET_KEY="change-this-secret"
+$env:MONGO_URI="mongodb://localhost:27017/"
+$env:MONGO_DB_NAME="smart_city_dashboard"
+$env:DEFAULT_ADMIN_NAME="Local Government Admin"
+$env:DEFAULT_ADMIN_EMAIL="admin@smartcity.local"
+$env:DEFAULT_ADMIN_PASSWORD="Admin@123"
+```
 
-2. `Carbon model`
-Predicts `Carbon_Footprint_kgCO2` using the same lifestyle inputs plus home energy consumption.
-
-The machine learning layer uses pure-Python regression components and automatically keeps the best-performing model for each target from:
-
-- ridge regression
-- weighted k-nearest neighbors regression
-
-It includes:
-
-- numeric feature standardization
-- categorical one-hot encoding
-- train/test split evaluation
-- model metrics: MAE, RMSE, and R²
+You can use [.env.example](</C:/Users/Htown/Documents/MSC Programe/Research Project/project/.env.example:1>) as a reference.
 
 ## Setup
 
+This project already includes a `.venv` in the workspace. If you want to install dependencies into it:
+
 ```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-py -m pip install -r requirements.txt
-py run.py
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe run.py
 ```
 
-The API will start on `http://127.0.0.1:5000`.
+The API runs on `http://127.0.0.1:5000`.
+
+## Authentication Flow
+
+### 1. Register a citizen
+
+`POST /api/v1/auth/register`
+
+```json
+{
+  "full_name": "Nimal Perera",
+  "email": "nimal@example.com",
+  "password": "Citizen@123",
+  "age": 31,
+  "gender": "Male",
+  "city": "Colombo",
+  "phone": "0771234567",
+  "address": "No. 10, Main Street"
+}
+```
+
+### 2. Login
+
+`POST /api/v1/auth/login`
+
+```json
+{
+  "email": "nimal@example.com",
+  "password": "Citizen@123"
+}
+```
+
+Response includes:
+
+- `access_token`
+- `token_type`
+- `user`
+
+Use the token in headers:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+### 3. Get logged-in user
+
+`GET /api/v1/auth/me`
+
+## Role Access
+
+### Citizen
+
+Citizens can access:
+
+- `GET /api/v1/metadata`
+- `GET /api/v1/dashboard/summary`
+- `GET /api/v1/insights/recommendations`
+- `POST /api/v1/predict/citizen`
+- `POST /api/v1/predict/city`
+- `GET /api/v1/announcements`
+
+### Admin
+
+Admins can access everything above, plus:
+
+- `GET /api/v1/admin/users`
+- `POST /api/v1/admin/announcements`
+
+The health endpoint remains public:
+
+- `GET /api/v1/health`
 
 ## API Endpoints
 
-### `GET /api/v1/health`
+### Public
 
-Returns service health, dataset loading status, and training status.
+- `GET /api/v1/health`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
 
-### `GET /api/v1/metadata`
+### Authenticated
 
-Returns:
+- `GET /api/v1/auth/me`
+- `GET /api/v1/metadata`
+- `GET /api/v1/dashboard/summary`
+- `GET /api/v1/insights/recommendations`
+- `POST /api/v1/predict/citizen`
+- `POST /api/v1/predict/city`
+- `GET /api/v1/announcements`
 
-- accepted categorical values
-- required input fields
-- model evaluation metrics
+### Admin only
 
-### `GET /api/v1/dashboard/summary`
+- `GET /api/v1/admin/users`
+- `POST /api/v1/admin/announcements`
 
-Returns dataset-level averages and total predicted city carbon and energy values.
+## Announcement Example
 
-### `GET /api/v1/insights/recommendations`
+### Create announcement as admin
 
-Returns city-level sustainability suggestions based on dashboard summary outputs.
+`POST /api/v1/admin/announcements`
+
+```json
+{
+  "title": "Energy Saving Week",
+  "message": "Please reduce unnecessary electricity usage this week and prefer public transport where possible.",
+  "audience_role": "citizen"
+}
+```
+
+### View announcements
+
+`GET /api/v1/announcements`
+
+## Prediction Example
 
 ### `POST /api/v1/predict/citizen`
-
-Example request:
 
 ```json
 {
@@ -111,50 +224,7 @@ Example request:
 }
 ```
 
-Example response:
-
-```json
-{
-  "citizen_id": 2001,
-  "inputs": {
-    "Age": 34.0,
-    "Work_Hours": 8.0,
-    "Shopping_Hours": 1.0,
-    "Entertainment_Hours": 2.0,
-    "Charging_Station_Usage": 0.0,
-    "Steps_Walked": 4200.0,
-    "Calories_Burned": 430.0,
-    "Sleep_Hours": 6.2,
-    "Social_Media_Hours": 4.5,
-    "Public_Events_Hours": 1.0,
-    "Gender": "Female",
-    "Mode_of_Transport": "Car",
-    "Home_Energy_Consumption_kWh": 5.41
-  },
-  "predictions": {
-    "predicted_energy_consumption_kwh": 5.41,
-    "predicted_carbon_footprint_kgco2": 63.78,
-    "sustainability_band": "Moderate"
-  },
-  "recommendations": {
-    "eco_friendly_alternatives": [
-      "Switch some weekly trips to walking, cycling, or public transport to reduce transport emissions."
-    ],
-    "energy_saving_tips": [
-      "Your predicted energy use is moderate; maintaining efficient lighting and appliance habits can keep it low."
-    ],
-    "health_suggestions": [
-      "Reducing screen time by 30 to 60 minutes a day may improve rest quality and daily movement.",
-      "Aim for at least 6,000 to 8,000 steps per day to improve heart health and support a more active routine.",
-      "Try targeting 7 to 9 hours of sleep for better recovery, concentration, and energy balance."
-    ]
-  }
-}
-```
-
 ### `POST /api/v1/predict/city`
-
-Example request:
 
 ```json
 {
@@ -173,34 +243,30 @@ Example request:
       "Sleep_Hours": 7.4,
       "Social_Media_Hours": 2.5,
       "Public_Events_Hours": 1.2
-    },
-    {
-      "Citizen_ID": 3002,
-      "Age": 46,
-      "Gender": "Female",
-      "Mode_of_Transport": "EV",
-      "Work_Hours": 7,
-      "Shopping_Hours": 2,
-      "Entertainment_Hours": 2,
-      "Charging_Station_Usage": 1,
-      "Steps_Walked": 5100,
-      "Calories_Burned": 470,
-      "Sleep_Hours": 6.7,
-      "Social_Media_Hours": 3.1,
-      "Public_Events_Hours": 0.8
     }
   ]
 }
 ```
 
-This endpoint returns:
+## How Authentication Is Implemented
 
-- per-citizen predictions
-- average predicted energy and carbon
-- total predicted city energy and carbon
+- Passwords are stored as hashes, not plain text
+- Tokens are signed using `itsdangerous`
+- Routes use role-based decorators for citizen/admin authorization
+- A default admin user is created automatically if it does not already exist
 
-## Notes
+## ML Notes
 
-- If `Home_Energy_Consumption_kWh` is included in the citizen payload, the backend uses it as a carbon prediction input override.
-- If `Home_Energy_Consumption_kWh` is omitted, the backend predicts energy first and feeds that value into the carbon model.
-- The recommendation engine mixes model outputs with practical sustainability and health rules to support better citizen guidance.
+The backend trains models at app startup:
+
+- energy model for `Home_Energy_Consumption_kWh`
+- carbon model for `Carbon_Footprint_kgCO2`
+
+The ML layer automatically keeps the better-performing model for each target from:
+
+- ridge regression
+- weighted k-nearest neighbors regression
+
+## Important Note
+
+The included dataset appears somewhat noisy, so the backend is functional but prediction accuracy may still improve if you later train with cleaner or richer real-world data.
