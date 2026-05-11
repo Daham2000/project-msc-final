@@ -1,9 +1,11 @@
 import atexit
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 from werkzeug.security import check_password_hash, generate_password_hash
+
+ANNOUNCEMENT_LIFETIME_DAYS = 7
 
 
 class DatabaseService:
@@ -19,7 +21,9 @@ class DatabaseService:
         self.users.create_index([("email", ASCENDING)], unique=True)
         self.users.create_index([("role", ASCENDING)])
         self.announcements.create_index([("created_at", DESCENDING)])
+        self.announcements.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)
         self.announcements.create_index([("audience_role", ASCENDING)])
+        self.backfill_announcement_expirations()
 
     def ensure_default_admin(self, full_name: str, email: str, password: str) -> None:
         email_normalized = email.strip().lower()
@@ -96,6 +100,8 @@ class DatabaseService:
         return [self.serialize_user(user) for user in users]
 
     def create_announcement(self, payload: dict, created_by: dict) -> dict:
+        self.purge_expired_announcements()
+
         title = str(payload.get("title", "")).strip()
         message = str(payload.get("message", "")).strip()
         audience_role = str(payload.get("audience_role", "citizen")).strip().lower()
@@ -106,11 +112,13 @@ class DatabaseService:
         if audience_role not in {"citizen", "all"}:
             raise ValueError("Field 'audience_role' must be either 'citizen' or 'all'.")
 
+        created_at = datetime.now(timezone.utc)
         document = {
             "title": title,
             "message": message,
             "audience_role": audience_role,
-            "created_at": datetime.now(timezone.utc),
+            "created_at": created_at,
+            "expires_at": created_at + timedelta(days=ANNOUNCEMENT_LIFETIME_DAYS),
             "created_by": {
                 "id": created_by["id"],
                 "full_name": created_by["full_name"],
@@ -123,23 +131,46 @@ class DatabaseService:
         return self.serialize_announcement(document)
 
     def list_announcements_for_user(self, user: dict) -> list[dict]:
-        if user["role"] == "admin":
-            announcements = self.announcements.find({}, sort=[("created_at", DESCENDING)])
-        else:
-            announcements = self.announcements.find(
-                {"audience_role": {"$in": ["citizen", "all"]}},
-                sort=[("created_at", DESCENDING)],
-            )
+        self.purge_expired_announcements()
+        announcements = self.announcements.find(
+            self._active_announcements_query(user),
+            sort=[("created_at", DESCENDING)],
+        )
         return [self.serialize_announcement(item) for item in announcements]
 
     def list_announcements_for_user_after(self, user: dict, after_id: str | None) -> list[dict]:
-        query = {} if user["role"] == "admin" else {"audience_role": {"$in": ["citizen", "all"]}}
+        self.purge_expired_announcements()
+        query = self._active_announcements_query(user)
 
         if after_id:
             query["_id"] = {"$gt": self._object_id(after_id)}
 
         announcements = self.announcements.find(query, sort=[("_id", ASCENDING)])
         return [self.serialize_announcement(item) for item in announcements]
+
+    def delete_announcement(self, announcement_id: str) -> bool:
+        self.purge_expired_announcements()
+        try:
+            object_id = self._object_id(announcement_id)
+        except Exception:
+            return False
+
+        result = self.announcements.delete_one({"_id": object_id})
+        return result.deleted_count > 0
+
+    def purge_expired_announcements(self) -> int:
+        result = self.announcements.delete_many({"expires_at": {"$lte": datetime.now(timezone.utc)}})
+        return result.deleted_count
+
+    def backfill_announcement_expirations(self) -> None:
+        announcements = self.announcements.find({"expires_at": {"$exists": False}})
+        for announcement in announcements:
+            created_at = announcement.get("created_at") or datetime.now(timezone.utc)
+            expires_at = created_at + timedelta(days=ANNOUNCEMENT_LIFETIME_DAYS)
+            self.announcements.update_one(
+                {"_id": announcement["_id"]},
+                {"$set": {"expires_at": expires_at}},
+            )
 
     @staticmethod
     def serialize_user(user: dict) -> dict:
@@ -161,8 +192,16 @@ class DatabaseService:
             "message": announcement["message"],
             "audience_role": announcement["audience_role"],
             "created_at": DatabaseService._iso(announcement.get("created_at")),
+            "expires_at": DatabaseService._iso(announcement.get("expires_at")),
             "created_by": announcement["created_by"],
         }
+
+    @staticmethod
+    def _active_announcements_query(user: dict) -> dict:
+        query = {"expires_at": {"$gt": datetime.now(timezone.utc)}}
+        if user["role"] != "admin":
+            query["audience_role"] = {"$in": ["citizen", "all"]}
+        return query
 
     @staticmethod
     def _iso(value):

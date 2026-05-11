@@ -206,6 +206,7 @@ button:disabled {
 .eyebrow {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.45rem;
   margin-bottom: 0.85rem;
   color: var(--accent);
@@ -423,6 +424,7 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
+  min-height: 3.1rem;
   padding: 0.95rem 1.2rem;
   border-radius: var(--radius-md);
   font-weight: 700;
@@ -465,6 +467,11 @@ h3 {
 .secondary-button:disabled,
 .ghost-button:disabled {
   opacity: 0.65;
+}
+
+.panel > .primary-button {
+  align-self: start;
+  justify-self: start;
 }
 
 .auth-footer {
@@ -525,8 +532,33 @@ h3 {
   color: var(--sidebar-text);
 }
 
+.sidebar-brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.sidebar-logo {
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 18px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 14px 30px rgba(4, 21, 14, 0.24);
+}
+
+.sidebar-brand .eyebrow {
+  color: var(--sidebar-text);
+}
+
+.sidebar-brand .eyebrow-icon {
+  color: #d9f3e3;
+  flex-shrink: 0;
+}
+
 .sidebar h1 {
   max-width: none;
+  margin-top: 0.25rem;
   font-size: 2.15rem;
 }
 
@@ -588,7 +620,6 @@ h3 {
   margin-top: 0.2rem;
   background: rgba(255, 255, 255, 0.12);
   color: var(--sidebar-text);
-  margin-top: "20px" !important;
 }
 
 .tab-list {
@@ -639,17 +670,25 @@ h3 {
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
+  width: 100%;
   padding: 0.95rem 1rem;
+  border: 0;
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.08);
   color: var(--sidebar-text);
   font-size: 0.92rem;
   line-height: 1.5;
+  text-align: left;
 }
 
 .sidebar-badge svg {
   margin-top: 0.15rem;
   flex-shrink: 0;
+}
+
+.sidebar-badge:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
 }
 
 .sidebar-logout {
@@ -734,6 +773,7 @@ h3 {
 
 .panel {
   display: grid;
+  align-content: start;
   gap: 1rem;
   padding: 1.4rem;
 }
@@ -782,6 +822,7 @@ h3 {
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 1.25rem;
 }
 
@@ -983,8 +1024,16 @@ h3 {
   color: var(--text-soft);
 }
 
-.announcement-card footer {
+.announcement-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 0.75rem;
+}
+
+.announcement-delete-button {
+  flex-shrink: 0;
 }
 
 .announcement-meta {
@@ -1125,7 +1174,8 @@ td {
   .page-header,
   .section-header,
   .metric-line,
-  .announcement-meta {
+  .announcement-meta,
+  .announcement-footer {
     flex-direction: column;
   }
 

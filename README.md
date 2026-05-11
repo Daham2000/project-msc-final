@@ -36,6 +36,10 @@ This project is a Flask backend for a Smart City Dashboard with:
 - `itsdangerous` for token signing
 - `werkzeug.security` for password hashing
 
+## Architecture
+
+The full system architecture diagram is available in [docs/system-architecture.md](</C:/Users/Htown/Documents/MSC Programe/Research Project/project/docs/system-architecture.md>).
+
 ## Dataset
 
 The backend loads this CSV by default:

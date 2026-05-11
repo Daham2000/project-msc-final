@@ -104,6 +104,8 @@ export const api = {
       },
       token
     ),
+  deleteAnnouncement: (announcementId: string, token: string) =>
+    request<{ message: string }>(`/admin/announcements/${announcementId}`, { method: "DELETE" }, token),
 };
 
 export { ApiError, API_BASE_URL };

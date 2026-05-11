@@ -109,6 +109,8 @@ export interface CitizenPredictionResponse {
     predicted_energy_consumption_kwh: number;
     predicted_carbon_footprint_kgco2: number;
     sustainability_band: string;
+    daily_average: PredictionPeriodMetrics;
+    monthly_average: PredictionPeriodMetrics;
   };
   recommendations: {
     eco_friendly_alternatives: string[];
@@ -117,10 +119,19 @@ export interface CitizenPredictionResponse {
   };
 }
 
+export interface PredictionPeriodMetrics {
+  predicted_energy_consumption_kwh: number;
+  predicted_carbon_footprint_kgco2: number;
+}
+
 export interface CityPredictionResponse {
   citizens_analyzed: number;
   average_predicted_carbon_kgco2: number;
   average_predicted_energy_kwh: number;
+  average_per_person: {
+    daily_average: PredictionPeriodMetrics;
+    monthly_average: PredictionPeriodMetrics;
+  };
   total_predicted_carbon_kgco2: number;
   total_predicted_energy_kwh: number;
   citizen_predictions: CitizenPredictionResponse[];
@@ -132,6 +143,7 @@ export interface Announcement {
   message: string;
   audience_role: "citizen" | "all";
   created_at: string;
+  expires_at: string | null;
   created_by: {
     id: string;
     full_name: string;

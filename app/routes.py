@@ -181,6 +181,18 @@ def create_announcement():
     return jsonify({"message": "Announcement created successfully.", "announcement": announcement}), 201
 
 
+@api_bp.delete("/admin/announcements/<announcement_id>")
+@login_required({"admin"})
+def delete_announcement(announcement_id: str):
+    database_service = get_database_service()
+
+    deleted = database_service.delete_announcement(announcement_id)
+    if not deleted:
+        return jsonify({"error": "Announcement not found."}), 404
+
+    return jsonify({"message": "Announcement deleted successfully."})
+
+
 @api_bp.get("/admin/users")
 @login_required({"admin"})
 def list_users():

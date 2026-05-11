@@ -40,6 +40,8 @@ type TabDefinition = {
   icon: AppIconName;
 };
 
+type CitizenResultView = "summary" | "recommendations";
+
 const citizenTabs: TabDefinition[] = [
   { id: "overview", label: "Overview", icon: "overview" },
   { id: "profile", label: "Profile", icon: "profile" },
@@ -74,8 +76,10 @@ export function DashboardView() {
     { ...defaultCitizenForm(), Citizen_ID: 2, Gender: "Male", Mode_of_Transport: "Public Transport" },
   ]);
   const [citizenResult, setCitizenResult] = useState<CitizenPredictionResponse | null>(null);
+  const [citizenResultView, setCitizenResultView] = useState<CitizenResultView>("summary");
   const [cityResult, setCityResult] = useState<CityPredictionResponse | null>(null);
   const [busySection, setBusySection] = useState<string | null>(null);
+  const [deletingAnnouncementId, setDeletingAnnouncementId] = useState<string | null>(null);
   const [announcementForm, setAnnouncementForm] = useState<CreateAnnouncementPayload>({
     title: "",
     message: "",
@@ -86,6 +90,7 @@ export function DashboardView() {
   const isAdmin = user?.role === "admin";
   const tabs = useMemo(() => (isAdmin ? adminTabs : citizenTabs), [isAdmin]);
   const currentTab = tabs.find((entry) => entry.id === tab) ?? tabs[0];
+  const showCitizenRecommendationsOnly = citizenResultView === "recommendations";
 
   useEffect(() => {
     if (!tabs.some((entry) => entry.id === tab)) {
@@ -171,6 +176,7 @@ export function DashboardView() {
     try {
       const result = await api.predictCitizen(citizenForm, token);
       setCitizenResult(result);
+      setCitizenResultView("summary");
       setTab("citizen");
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "We could not prepare your guidance right now.");
@@ -237,6 +243,35 @@ export function DashboardView() {
     }
   };
 
+  const handleAnnouncementDelete = async (announcementId: string) => {
+    const shouldDelete = window.confirm("Delete this service notice now?");
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingAnnouncementId(announcementId);
+    setError(null);
+
+    try {
+      await api.deleteAnnouncement(announcementId, token);
+      setAnnouncements((current) => current.filter((item) => item.id !== announcementId));
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : "We could not delete the notice.");
+    } finally {
+      setDeletingAnnouncementId(null);
+    }
+  };
+
+  const handleRecommendationsShortcut = () => {
+    if (!isAdmin) {
+      setCitizenResultView("recommendations");
+      setTab("citizen");
+      return;
+    }
+
+    setTab("overview");
+  };
+
   const addCityCitizen = () => {
     setCityForms((current) => [...current, { ...defaultCitizenForm(), Citizen_ID: current.length + 1 }]);
   };
@@ -263,11 +298,13 @@ export function DashboardView() {
 
       <aside className="sidebar" aria-label="Primary navigation">
         <div className="sidebar-brand">
-          <div className="eyebrow">
-            <AppIcon className="eyebrow-icon" name="leaf" />
-            Sustainable City Services
+          <div className="sidebar-brand-mark">
+            <img className="sidebar-logo" src="/smart-city-logo.png" alt="" />
+            <div>
+              <div className="eyebrow">Sustainable City Services</div>
+              <h1>{isAdmin ? "Green city administration" : "Sustainable living portal"}</h1>
+            </div>
           </div>
-          <h1>{isAdmin ? "Green city administration" : "Sustainable living portal"}</h1>
           <p className="sidebar-copy">
             {isAdmin
               ? "Support cleaner transport, lower emissions, and better community planning with one operational workspace."
@@ -304,7 +341,12 @@ export function DashboardView() {
               aria-current={tab === entry.id ? "page" : undefined}
               className={tab === entry.id ? "tab-button active" : "tab-button"}
               type="button"
-              onClick={() => setTab(entry.id)}
+              onClick={() => {
+                if (entry.id === "citizen") {
+                  setCitizenResultView("summary");
+                }
+                setTab(entry.id);
+              }}
             >
               <span className="tab-button-icon" aria-hidden="true">
                 <AppIcon name={entry.icon} />
@@ -315,10 +357,10 @@ export function DashboardView() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-badge">
+          <button className="sidebar-badge" type="button" onClick={handleRecommendationsShortcut}>
             <AppIcon name="spark" />
             <span>{isAdmin ? "Planning for cleaner communities" : "Small daily choices help reduce city emissions"}</span>
-          </div>
+          </button>
           <button className="secondary-button sidebar-logout" type="button" onClick={logout}>
             <AppIcon name="logout" />
             Sign out
@@ -365,7 +407,15 @@ export function DashboardView() {
               isAdmin ? (
                 <AdminOverview announcements={announcements} recommendations={recommendations} summary={summary} usersCount={users.length} />
               ) : (
-                <CitizenOverview announcements={announcements} recommendations={recommendations} summary={summary} user={user} onOpenProfile={() => setTab("profile")} />
+                <CitizenOverview
+                  announcements={announcements}
+                  recommendations={recommendations}
+                  summary={summary}
+                  user={user}
+                  onOpenProfile={() => setTab("profile")}
+                  onOpenGuidance={() => setTab("citizen")}
+                  onOpenAnnouncements={() => setTab("announcements")}
+                />
               )
             ) : null}
 
@@ -397,31 +447,61 @@ export function DashboardView() {
                   <div className="panel-title">
                     <AppIcon name="leaf" />
                     <div className="panel-title-copy">
-                      <div className="panel-heading">Guidance summary</div>
-                      <p>Review estimated impact and practical sustainability recommendations.</p>
+                      <div className="panel-heading">
+                        {showCitizenRecommendationsOnly ? "Personal recommendations" : "Guidance summary"}
+                      </div>
+                      <p>
+                        {showCitizenRecommendationsOnly
+                          ? "Review only the practical recommendations from your latest sustainability check."
+                          : "Review estimated daily and monthly impact alongside practical sustainability recommendations."}
+                      </p>
                     </div>
                   </div>
                   {citizenResult ? (
                     <>
-                      <div className="stats-grid single-column">
-                        <StatCard
-                          icon="energy"
-                          label="Estimated household energy use"
-                          value={`${formatNumber(citizenResult.predictions.predicted_energy_consumption_kwh)} kWh`}
-                        />
-                        <StatCard
-                          icon="carbon"
-                          label="Estimated carbon footprint"
-                          value={`${formatNumber(citizenResult.predictions.predicted_carbon_footprint_kgco2)} kgCO2`}
-                          tone="warm"
-                        />
-                        <StatCard
-                          icon="leaf"
-                          label="Sustainability band"
-                          value={citizenResult.predictions.sustainability_band}
-                          tone="cool"
-                        />
-                      </div>
+                      {!showCitizenRecommendationsOnly ? (
+                        <div className="stats-grid single-column">
+                          <StatCard
+                            icon="energy"
+                            label="Personal energy estimate"
+                            value={`${formatNumber(citizenResult.predictions.predicted_energy_consumption_kwh)} kWh`}
+                          />
+                          <StatCard
+                            icon="carbon"
+                            label="Estimated carbon footprint"
+                            value={`${formatNumber(citizenResult.predictions.predicted_carbon_footprint_kgco2)} kgCO2`}
+                            tone="warm"
+                          />
+                          <StatCard
+                            icon="leaf"
+                            label="Sustainability band"
+                            value={citizenResult.predictions.sustainability_band}
+                            tone="cool"
+                          />
+                          <StatCard
+                            icon="energy"
+                            label="Average energy per day"
+                            value={`${formatNumber(citizenResult.predictions.daily_average.predicted_energy_consumption_kwh)} kWh`}
+                          />
+                          <StatCard
+                            icon="carbon"
+                            label="Average carbon per day"
+                            value={`${formatNumber(citizenResult.predictions.daily_average.predicted_carbon_footprint_kgco2)} kgCO2`}
+                            tone="warm"
+                          />
+                          <StatCard
+                            icon="energy"
+                            label="Projected energy per 30-day month"
+                            value={`${formatNumber(citizenResult.predictions.monthly_average.predicted_energy_consumption_kwh)} kWh`}
+                          />
+                          <StatCard
+                            icon="carbon"
+                            label="Projected carbon per 30-day month"
+                            value={`${formatNumber(citizenResult.predictions.monthly_average.predicted_carbon_footprint_kgco2)} kgCO2`}
+                            tone="warm"
+                          />
+                        </div>
+                      ) : null}
 
                       <RecommendationBlock
                         icon="transport"
@@ -441,7 +521,9 @@ export function DashboardView() {
                     </>
                   ) : (
                     <div className="empty-state">
-                      Complete the form to receive tailored guidance, household energy estimates, and practical next steps.
+                      {showCitizenRecommendationsOnly
+                        ? "Run the personal sustainability check first; recommendations will appear here after the prediction is ready."
+                        : "Complete the form to receive tailored guidance, household energy estimates, and practical next steps."}
                     </div>
                   )}
                 </div>
@@ -499,7 +581,7 @@ export function DashboardView() {
                     <AppIcon name="overview" />
                     <div className="panel-title-copy">
                       <div className="panel-heading">Forecast results</div>
-                      <p>Review energy demand, carbon impact, and profile-level forecast outcomes.</p>
+                      <p>Review per-person daily and monthly impact together with aggregate forecast outcomes.</p>
                     </div>
                   </div>
                   {cityResult ? (
@@ -507,9 +589,25 @@ export function DashboardView() {
                       <div className="stats-grid">
                         <StatCard icon="users" label="Profiles analyzed" value={String(cityResult.citizens_analyzed)} tone="cool" />
                         <StatCard
+                          icon="energy"
+                          label="Average energy per person per day"
+                          value={`${formatNumber(cityResult.average_per_person.daily_average.predicted_energy_consumption_kwh)} kWh`}
+                        />
+                        <StatCard
                           icon="carbon"
-                          label="Average carbon footprint"
-                          value={`${formatNumber(cityResult.average_predicted_carbon_kgco2)} kgCO2`}
+                          label="Average carbon per person per day"
+                          value={`${formatNumber(cityResult.average_per_person.daily_average.predicted_carbon_footprint_kgco2)} kgCO2`}
+                          tone="warm"
+                        />
+                        <StatCard
+                          icon="energy"
+                          label="Average energy per person per month"
+                          value={`${formatNumber(cityResult.average_per_person.monthly_average.predicted_energy_consumption_kwh)} kWh`}
+                        />
+                        <StatCard
+                          icon="carbon"
+                          label="Average carbon per person per month"
+                          value={`${formatNumber(cityResult.average_per_person.monthly_average.predicted_carbon_footprint_kgco2)} kgCO2`}
                           tone="warm"
                         />
                         <StatCard
@@ -529,8 +627,10 @@ export function DashboardView() {
                           <thead>
                             <tr>
                               <th>Reference</th>
-                              <th>Energy</th>
-                              <th>Carbon</th>
+                              <th>Energy per day</th>
+                              <th>Energy per month</th>
+                              <th>Carbon per day</th>
+                              <th>Carbon per month</th>
                               <th>Sustainability band</th>
                             </tr>
                           </thead>
@@ -538,8 +638,10 @@ export function DashboardView() {
                             {cityResult.citizen_predictions.map((item, index) => (
                               <tr key={`${item.citizen_id ?? "unknown"}-${index}`}>
                                 <td>{item.citizen_id ?? "N/A"}</td>
-                                <td>{formatNumber(item.predictions.predicted_energy_consumption_kwh)} kWh</td>
-                                <td>{formatNumber(item.predictions.predicted_carbon_footprint_kgco2)} kgCO2</td>
+                                <td>{formatNumber(item.predictions.daily_average.predicted_energy_consumption_kwh)} kWh</td>
+                                <td>{formatNumber(item.predictions.monthly_average.predicted_energy_consumption_kwh)} kWh</td>
+                                <td>{formatNumber(item.predictions.daily_average.predicted_carbon_footprint_kgco2)} kgCO2</td>
+                                <td>{formatNumber(item.predictions.monthly_average.predicted_carbon_footprint_kgco2)} kgCO2</td>
                                 <td>{item.predictions.sustainability_band}</td>
                               </tr>
                             ))}
@@ -569,7 +671,12 @@ export function DashboardView() {
                     </p>
                   </div>
                 </div>
-                <AnnouncementListPage announcements={announcements} isAdmin={isAdmin} />
+                <AnnouncementListPage
+                  announcements={announcements}
+                  deletingAnnouncementId={deletingAnnouncementId}
+                  isAdmin={isAdmin}
+                  onDelete={isAdmin ? handleAnnouncementDelete : undefined}
+                />
               </div>
             ) : null}
 
@@ -661,12 +768,16 @@ function CitizenOverview({
   summary,
   user,
   onOpenProfile,
+  onOpenGuidance,
+  onOpenAnnouncements,
 }: {
   announcements: Announcement[];
   recommendations: RecommendationsResponse | null;
   summary: SummaryResponse | null;
   user: User;
   onOpenProfile: () => void;
+  onOpenGuidance: () => void;
+  onOpenAnnouncements: () => void;
 }) {
   const transportEntries = Object.entries(summary?.transport_distribution ?? {});
   const totalProfiles = summary?.citizens_profiled ?? 0;
@@ -718,7 +829,7 @@ function CitizenOverview({
               <small>Check your service area, contact information, and account details.</small>
             </span>
           </button>
-          <div className="action-card static">
+          <button className="action-card" type="button" onClick={onOpenGuidance}>
             <span className="action-card-icon">
               <AppIcon name="guidance" />
             </span>
@@ -726,8 +837,8 @@ function CitizenOverview({
               <strong>Run a guidance check</strong>
               <small>Estimate household energy use and carbon impact with plain-language advice.</small>
             </span>
-          </div>
-          <div className="action-card static">
+          </button>
+          <button className="action-card" type="button" onClick={onOpenAnnouncements}>
             <span className="action-card-icon">
               <AppIcon name="notice" />
             </span>
@@ -735,7 +846,7 @@ function CitizenOverview({
               <strong>Stay informed</strong>
               <small>Read new notices about services, programs, and local green initiatives.</small>
             </span>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -1094,10 +1205,14 @@ function LatestNotices({
 
 function AnnouncementListPage({
   announcements,
+  deletingAnnouncementId,
   isAdmin,
+  onDelete,
 }: {
   announcements: Announcement[];
+  deletingAnnouncementId: string | null;
   isAdmin: boolean;
+  onDelete?: (announcementId: string) => void;
 }) {
   if (!announcements.length) {
     return (
@@ -1117,7 +1232,19 @@ function AnnouncementListPage({
           </div>
           <h3>{item.title}</h3>
           <p>{item.message}</p>
-          <footer>Posted by {item.created_by.full_name}</footer>
+          <footer className="announcement-footer">
+            <span>Posted by {item.created_by.full_name}</span>
+            {isAdmin && onDelete ? (
+              <button
+                className="ghost-button announcement-delete-button"
+                disabled={deletingAnnouncementId === item.id}
+                type="button"
+                onClick={() => onDelete(item.id)}
+              >
+                {deletingAnnouncementId === item.id ? "Deleting..." : "Delete"}
+              </button>
+            ) : null}
+          </footer>
         </article>
       ))}
     </div>

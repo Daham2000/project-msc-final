@@ -17,6 +17,70 @@ from .recommendations import citizen_recommendations, sustainability_band
 
 ENERGY_FEATURES = list(NUMERIC_FIELDS)
 CARBON_FEATURES = list(NUMERIC_FIELDS) + [ENERGY_TARGET]
+DAYS_PER_MONTH = 30
+BASELINE_ACTIVE_HOME_HOURS = 7.0
+MODEL_ENERGY_WEIGHT = 0.35
+BASE_DAILY_HOME_ENERGY_KWH = 1.25
+ACTIVE_HOME_HOUR_KWH = 0.16
+SOCIAL_MEDIA_HOUR_KWH = 0.18
+ENTERTAINMENT_HOUR_KWH = 0.22
+
+
+def _bounded_prediction(value: float) -> float:
+    return max(value, 0.0)
+
+
+def _clamp(value: float, minimum: float, maximum: float) -> float:
+    return min(max(value, minimum), maximum)
+
+
+def _has_energy_override(payload: Dict[str, object]) -> bool:
+    return payload.get(ENERGY_TARGET) not in (None, "")
+
+
+def _active_home_hours(citizen: Dict[str, object]) -> float:
+    sleep_hours = _clamp(float(citizen["Sleep_Hours"]), 0.0, 24.0)
+    away_hours = _clamp(
+        float(citizen["Work_Hours"])
+        + float(citizen["Shopping_Hours"])
+        + float(citizen["Public_Events_Hours"]),
+        0.0,
+        24.0,
+    )
+    return _clamp(24.0 - sleep_hours - away_hours, 0.0, 24.0)
+
+
+def _activity_energy_estimate(citizen: Dict[str, object]) -> float:
+    return (
+        BASE_DAILY_HOME_ENERGY_KWH
+        + (_active_home_hours(citizen) * ACTIVE_HOME_HOUR_KWH)
+        + (float(citizen["Social_Media_Hours"]) * SOCIAL_MEDIA_HOUR_KWH)
+        + (float(citizen["Entertainment_Hours"]) * ENTERTAINMENT_HOUR_KWH)
+    )
+
+
+def _adjust_energy_prediction(model_energy: float, citizen: Dict[str, object]) -> float:
+    activity_energy = _activity_energy_estimate(citizen)
+    blended_energy = (model_energy * MODEL_ENERGY_WEIGHT) + (
+        activity_energy * (1.0 - MODEL_ENERGY_WEIGHT)
+    )
+    active_hour_ratio = _active_home_hours(citizen) / BASELINE_ACTIVE_HOME_HOURS
+    return _clamp(blended_energy, model_energy * 0.45, model_energy * max(0.8, active_hour_ratio + 0.25))
+
+
+def _period_metrics(energy_value: float, carbon_value: float) -> Dict[str, Dict[str, float]]:
+    bounded_energy = _bounded_prediction(energy_value)
+    bounded_carbon = _bounded_prediction(carbon_value)
+    return {
+        "daily_average": {
+            "predicted_energy_consumption_kwh": round(bounded_energy, 2),
+            "predicted_carbon_footprint_kgco2": round(bounded_carbon, 2),
+        },
+        "monthly_average": {
+            "predicted_energy_consumption_kwh": round(bounded_energy * DAYS_PER_MONTH, 2),
+            "predicted_carbon_footprint_kgco2": round(bounded_carbon * DAYS_PER_MONTH, 2),
+        },
+    }
 
 
 class SmartCityService:
@@ -119,11 +183,13 @@ class SmartCityService:
     def predict_citizen(self, payload: Dict[str, object]) -> Dict[str, object]:
         citizen = self._sanitize_payload(payload)
 
-        predicted_energy = self.energy_model.predict(citizen)
-        citizen[ENERGY_TARGET] = (
-            citizen[ENERGY_TARGET] if payload.get(ENERGY_TARGET) not in (None, "") else predicted_energy
-        )
+        has_energy_override = _has_energy_override(payload)
+        model_energy = self.energy_model.predict(citizen)
+        predicted_energy = citizen[ENERGY_TARGET] if has_energy_override else _adjust_energy_prediction(model_energy, citizen)
+        citizen[ENERGY_TARGET] = predicted_energy
         predicted_carbon = self.carbon_model.predict(citizen)
+        bounded_energy = _bounded_prediction(predicted_energy)
+        bounded_carbon = _bounded_prediction(predicted_carbon)
 
         recommendations = citizen_recommendations(citizen)
 
@@ -134,9 +200,10 @@ class SmartCityService:
                 for key in NUMERIC_FIELDS + CATEGORICAL_FIELDS + [ENERGY_TARGET]
             },
             "predictions": {
-                "predicted_energy_consumption_kwh": round(max(predicted_energy, 0.0), 2),
-                "predicted_carbon_footprint_kgco2": round(max(predicted_carbon, 0.0), 2),
-                "sustainability_band": sustainability_band(predicted_carbon),
+                "predicted_energy_consumption_kwh": round(bounded_energy, 2),
+                "predicted_carbon_footprint_kgco2": round(bounded_carbon, 2),
+                "sustainability_band": sustainability_band(bounded_carbon),
+                **_period_metrics(predicted_energy, predicted_carbon),
             },
             "recommendations": recommendations,
         }
@@ -154,6 +221,10 @@ class SmartCityService:
             "citizens_analyzed": len(citizen_results),
             "average_predicted_carbon_kgco2": round(average(carbon_predictions), 2),
             "average_predicted_energy_kwh": round(average(energy_predictions), 2),
+            "average_per_person": _period_metrics(
+                average(energy_predictions),
+                average(carbon_predictions),
+            ),
             "total_predicted_carbon_kgco2": round(sum(carbon_predictions), 2),
             "total_predicted_energy_kwh": round(sum(energy_predictions), 2),
             "citizen_predictions": citizen_results,
@@ -169,7 +240,8 @@ class SmartCityService:
 
         for record in self.records:
             working = dict(record)
-            predicted_energy = self.energy_model.predict(working)
+            model_energy = self.energy_model.predict(working)
+            predicted_energy = _adjust_energy_prediction(model_energy, working)
             working[ENERGY_TARGET] = predicted_energy
             predicted_carbon = self.carbon_model.predict(working)
             predicted_energies.append(max(predicted_energy, 0.0))
