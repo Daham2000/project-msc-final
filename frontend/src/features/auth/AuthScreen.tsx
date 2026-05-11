@@ -62,11 +62,10 @@ export function AuthScreen() {
     <main className="auth-page">
       <section className="hero-card">
         <div className="eyebrow">Sustainable City Services</div>
-        <h1>Support greener living through one trusted city service portal.</h1>
+        <h1>City services, guidance, and notices in one secure place.</h1>
         <p className="hero-copy">
-          Citizens and authorized officers can review official notices, manage account details, and use
-          planning tools designed to reduce carbon impact, encourage smart habits, and build healthier
-          communities.
+          A simple workspace for residents and authorized officers to view local updates, manage account
+          details, and access sustainability guidance from the city.
         </p>
 
         <div className="hero-metrics">
@@ -76,9 +75,8 @@ export function AuthScreen() {
                 <AppIcon name="shield" />
               </span>
             </div>
-            <strong style={{paddingTop: "50px"}}>Account access</strong>
-            <br/>
-            <span>Secure sign-in for citizen services and administrative functions</span>
+            <strong>Secure access</strong>
+            <span>Sign in to citizen services and authorized administration tools.</span>
           </div>
           <div className="mini-stat">
             <div className="mini-stat-header">
@@ -86,9 +84,8 @@ export function AuthScreen() {
                 <AppIcon name="leaf" />
               </span>
             </div>
-            <strong style={{paddingTop: "50px"}}>Personal guidance</strong>
-            <br/>
-            <span>Household recommendations that support lower-carbon and energy-aware living</span>
+            <strong>Personal guidance</strong>
+            <span>Review practical household recommendations in plain language.</span>
           </div>
           <div className="mini-stat">
             <div className="mini-stat-header">
@@ -96,9 +93,8 @@ export function AuthScreen() {
                 <AppIcon name="notice" />
               </span>
             </div>
-            <strong style={{paddingTop: "50px"}}>City sustainability updates</strong>
-            <br/>
-            <span style={{paddingTop: "50px"}}>Official updates that help residents take part in a cleaner, greener city</span>
+            <strong>Official notices</strong>
+            <span>Stay informed about local programs, services, and public updates.</span>
           </div>
         </div>
       </section>
@@ -130,7 +126,7 @@ export function AuthScreen() {
           </p>
         </div>
 
-        {error ? <div className="alert error">{error}</div> : null}
+        {error ? <div className="alert error" role="alert">{error}</div> : null}
 
         {mode === "login" ? (
           <form className="stacked-form" onSubmit={handleLogin}>
@@ -138,6 +134,7 @@ export function AuthScreen() {
               <span>Email</span>
               <input
                 type="email"
+                autoComplete="email"
                 value={loginForm.email}
                 onChange={(event) =>
                   setLoginForm((current) => ({ ...current, email: event.target.value }))
@@ -151,6 +148,7 @@ export function AuthScreen() {
               <span>Password</span>
               <input
                 type="password"
+                autoComplete="current-password"
                 value={loginForm.password}
                 onChange={(event) =>
                   setLoginForm((current) => ({ ...current, password: event.target.value }))
@@ -171,6 +169,7 @@ export function AuthScreen() {
                 <span>Full Name</span>
                 <input
                   type="text"
+                  autoComplete="name"
                   value={registerForm.full_name}
                   onChange={(event) =>
                     setRegisterForm((current) => ({ ...current, full_name: event.target.value }))
@@ -183,6 +182,7 @@ export function AuthScreen() {
                 <span>Email</span>
                 <input
                   type="email"
+                  autoComplete="email"
                   value={registerForm.email}
                   onChange={(event) =>
                     setRegisterForm((current) => ({ ...current, email: event.target.value }))
@@ -195,6 +195,7 @@ export function AuthScreen() {
                 <span>Password</span>
                 <input
                   type="password"
+                  autoComplete="new-password"
                   value={registerForm.password}
                   onChange={(event) =>
                     setRegisterForm((current) => ({ ...current, password: event.target.value }))
@@ -234,6 +235,7 @@ export function AuthScreen() {
                 <span>City</span>
                 <input
                   type="text"
+                  autoComplete="address-level2"
                   value={registerForm.city ?? ""}
                   onChange={(event) =>
                     setRegisterForm((current) => ({ ...current, city: event.target.value }))
@@ -245,6 +247,7 @@ export function AuthScreen() {
                 <span>Phone</span>
                 <input
                   type="text"
+                  autoComplete="tel"
                   value={registerForm.phone ?? ""}
                   onChange={(event) =>
                     setRegisterForm((current) => ({ ...current, phone: event.target.value }))
@@ -256,6 +259,7 @@ export function AuthScreen() {
                 <span>Address</span>
                 <input
                   type="text"
+                  autoComplete="street-address"
                   value={registerForm.address ?? ""}
                   onChange={(event) =>
                     setRegisterForm((current) => ({ ...current, address: event.target.value }))

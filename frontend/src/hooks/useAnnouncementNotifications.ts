@@ -61,7 +61,7 @@ export function useAnnouncementNotifications({
         onAnnouncement(announcement);
         playNotificationSound();
         toast.success(`New notice: ${announcement.title}`, {
-          duration: 5000,
+          duration: 8000,
           position: "top-right",
         });
       });
