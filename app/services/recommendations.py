@@ -1,7 +1,14 @@
 from typing import Dict, List
 
 
-LOW_CARBON_TRANSPORT = {"Walking", "Bike", "Bicycle", "Public Transport"}
+# "Bike" is the motorbike category ("Bicycle" is the pedal-powered one), so it does
+# not belong here. EV does: its only emissions are the grid electricity it charges on.
+LOW_CARBON_TRANSPORT = {"Walking", "Bicycle", "Public Transport", "EV"}
+
+# Thresholds match the daily kgCO2 / kWh scale of the rebuilt dataset.
+HIGH_HOME_ENERGY_KWH = 5.5
+HIGH_CARBON_KGCO2 = 7.5
+LOW_CARBON_KGCO2 = 4.5
 
 
 def citizen_recommendations(payload: Dict[str, object]) -> Dict[str, List[str]]:
@@ -25,7 +32,7 @@ def citizen_recommendations(payload: Dict[str, object]) -> Dict[str, List[str]]:
     else:
         eco_tips.append("Keep using low-emission transport and combine errands into one trip to stay efficient.")
 
-    if energy_use > 6.0:
+    if energy_use > HIGH_HOME_ENERGY_KWH:
         energy_tips.append("Your predicted home energy use is relatively high; use LED lighting and switch off standby appliances.")
         energy_tips.append("Consider smart plugs or scheduled appliance use during off-peak periods to reduce wasted electricity.")
     else:
@@ -64,9 +71,9 @@ def citizen_recommendations(payload: Dict[str, object]) -> Dict[str, List[str]]:
 
 
 def sustainability_band(carbon_footprint: float) -> str:
-    if carbon_footprint < 35:
+    if carbon_footprint < LOW_CARBON_KGCO2:
         return "Low"
-    if carbon_footprint < 65:
+    if carbon_footprint < HIGH_CARBON_KGCO2:
         return "Moderate"
     return "High"
 
@@ -77,12 +84,12 @@ def city_recommendations(summary: Dict[str, object]) -> List[str]:
     energy_average = float(summary["average_predicted_energy_kwh"])
     top_transport = str(summary["most_common_transport_mode"])
 
-    if carbon_average >= 65:
+    if carbon_average >= HIGH_CARBON_KGCO2:
         recommendations.append("Citywide emissions are high; prioritize public transport campaigns, efficient buildings, and household energy awareness.")
     else:
         recommendations.append("Citywide emissions are manageable; expand the habits that already support lower-carbon living.")
 
-    if energy_average >= 6:
+    if energy_average >= HIGH_HOME_ENERGY_KWH:
         recommendations.append("Average home energy demand is elevated; smart metering and appliance-efficiency programs could have a strong impact.")
 
     if top_transport in {"Car", "EV"}:

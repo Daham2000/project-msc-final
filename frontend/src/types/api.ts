@@ -29,10 +29,17 @@ export interface RegisterPayload {
   email: string;
   password: string;
   age?: number;
+  /** Required by the API: notices are targeted by city. */
+  city: string;
   gender?: string;
-  city?: string;
   phone?: string;
   address?: string;
+}
+
+export interface CitiesResponse {
+  country: string;
+  count: number;
+  cities: string[];
 }
 
 export interface LoginPayload {
@@ -137,11 +144,16 @@ export interface CityPredictionResponse {
   citizen_predictions: CitizenPredictionResponse[];
 }
 
+/** "island_wide" reaches every city; "cities" reaches only the listed ones. */
+export type AudienceScope = "island_wide" | "cities";
+
 export interface Announcement {
   id: string;
   title: string;
   message: string;
   audience_role: "citizen" | "all";
+  audience_scope: AudienceScope;
+  cities: string[];
   created_at: string;
   expires_at: string | null;
   created_by: {
@@ -161,6 +173,8 @@ export interface CreateAnnouncementPayload {
   title: string;
   message: string;
   audience_role: "citizen" | "all";
+  audience_scope: AudienceScope;
+  cities: string[];
 }
 
 export interface UserListResponse {

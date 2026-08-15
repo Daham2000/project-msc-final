@@ -2,6 +2,7 @@ import type {
   Announcement,
   AnnouncementListResponse,
   AuthResponse,
+  CitiesResponse,
   CitizenPredictionForm,
   CitizenPredictionResponse,
   CityPredictionResponse,
@@ -58,6 +59,8 @@ async function request<T>(
 
 export const api = {
   getHealth: () => request<HealthResponse>("/health"),
+  // Unauthenticated: the registration form needs it before an account exists.
+  getCities: () => request<CitiesResponse>("/cities"),
   register: (payload: RegisterPayload) =>
     request<{ message: string; user: User }>("/auth/register", {
       method: "POST",

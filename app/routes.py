@@ -18,6 +18,16 @@ def get_database_service():
     return current_app.extensions["database_service"]
 
 
+def get_location_service():
+    return current_app.extensions["location_service"]
+
+
+@api_bp.get("/cities")
+def list_cities():
+    """Unauthenticated: the registration form needs this before an account exists."""
+    return jsonify(get_location_service().to_dict())
+
+
 @api_bp.get("/health")
 def health_check():
     service = get_service()

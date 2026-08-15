@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from "react";
 
 import { useAuth } from "../../auth/AuthContext";
 import { AppIcon } from "../../components/AppIcon";
+import { SearchableSelect } from "../../components/SearchableSelect";
+import { useCities } from "../../hooks/useCities";
 import type { RegisterPayload } from "../../types/api";
 
 type AuthMode = "login" | "register";
@@ -24,6 +26,8 @@ export function AuthScreen() {
   const [registerForm, setRegisterForm] = useState<RegisterPayload>(initialRegisterState);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cityTouched, setCityTouched] = useState(false);
+  const { cities, country, loading: citiesLoading, error: citiesError } = useCities();
 
   const title = useMemo(
     () => (mode === "login" ? "Access your citizen services account" : "Create your citizen services account"),
@@ -46,6 +50,15 @@ export function AuthScreen() {
 
   const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    // The combobox is not a native control, so required-ness is enforced here
+    // rather than by the browser. The API validates the value again server-side.
+    if (!registerForm.city) {
+      setCityTouched(true);
+      setError("Select your city to continue.");
+      return;
+    }
+
     setBusy(true);
     setError(null);
 
@@ -240,17 +253,32 @@ export function AuthScreen() {
                   />
                 </label>
 
-                <label className="field">
+                <div className="field">
                   <span>City</span>
-                  <input
-                    type="text"
-                    autoComplete="address-level2"
-                    value={registerForm.city ?? ""}
-                    onChange={(event) =>
-                      setRegisterForm((current) => ({ ...current, city: event.target.value }))
+                  <SearchableSelect
+                    disabled={citiesLoading || Boolean(citiesError)}
+                    emptyMessage="No city matches that search."
+                    invalid={cityTouched && !registerForm.city}
+                    onChange={(value) => {
+                      setCityTouched(true);
+                      setRegisterForm((current) => ({ ...current, city: value }));
+                    }}
+                    options={cities}
+                    placeholder={
+                      citiesLoading
+                        ? "Loading cities..."
+                        : citiesError
+                          ? "City list unavailable"
+                          : `Search ${country || "your"} cities`
                     }
+                    value={registerForm.city}
                   />
-                </label>
+                  <small className="field-hint">
+                    {citiesError
+                      ? "The city list could not be loaded. Refresh the page and try again."
+                      : "Required. Your city determines which local notices you receive."}
+                  </small>
+                </div>
 
                 <label className="field">
                   <span>Phone</span>

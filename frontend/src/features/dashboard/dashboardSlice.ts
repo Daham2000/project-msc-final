@@ -64,6 +64,8 @@ const createInitialDashboardState = (): DashboardState => ({
     title: "",
     message: "",
     audience_role: "citizen",
+    audience_scope: "island_wide",
+    cities: [],
   },
   announcementStreamSinceId: null,
 });

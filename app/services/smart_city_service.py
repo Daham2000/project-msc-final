@@ -11,6 +11,7 @@ from .data_utils import (
     collect_categories,
     load_dataset,
 )
+from .domain_model import carbon_footprint_kg, home_energy_kwh
 from .ml import TrainedRegressionModel
 from .recommendations import citizen_recommendations, sustainability_band
 
@@ -18,12 +19,18 @@ from .recommendations import citizen_recommendations, sustainability_band
 ENERGY_FEATURES = list(NUMERIC_FIELDS)
 CARBON_FEATURES = list(NUMERIC_FIELDS) + [ENERGY_TARGET]
 DAYS_PER_MONTH = 30
-BASELINE_ACTIVE_HOME_HOURS = 7.0
-MODEL_ENERGY_WEIGHT = 0.35
-BASE_DAILY_HOME_ENERGY_KWH = 1.25
-ACTIVE_HOME_HOUR_KWH = 0.16
-SOCIAL_MEDIA_HOUR_KWH = 0.18
-ENTERTAINMENT_HOUR_KWH = 0.22
+
+# The learned models capture behavioural variation the equations do not, but the
+# equations guarantee physically correct ordering (a walker can never be charged
+# for vehicle emissions). Blending keeps both properties.
+MODEL_WEIGHT = 0.6
+DOMAIN_WEIGHT = 1.0 - MODEL_WEIGHT
+
+# How far a learned prediction may drift from the physical estimate before it is
+# clipped back. Wide enough to keep model signal, tight enough to stop a linear
+# extrapolation from returning a negative or absurd value.
+PLAUSIBLE_LOWER_RATIO = 0.55
+PLAUSIBLE_UPPER_RATIO = 1.75
 
 
 def _bounded_prediction(value: float) -> float:
@@ -38,34 +45,24 @@ def _has_energy_override(payload: Dict[str, object]) -> bool:
     return payload.get(ENERGY_TARGET) not in (None, "")
 
 
-def _active_home_hours(citizen: Dict[str, object]) -> float:
-    sleep_hours = _clamp(float(citizen["Sleep_Hours"]), 0.0, 24.0)
-    away_hours = _clamp(
-        float(citizen["Work_Hours"])
-        + float(citizen["Shopping_Hours"])
-        + float(citizen["Public_Events_Hours"]),
-        0.0,
-        24.0,
-    )
-    return _clamp(24.0 - sleep_hours - away_hours, 0.0, 24.0)
-
-
-def _activity_energy_estimate(citizen: Dict[str, object]) -> float:
-    return (
-        BASE_DAILY_HOME_ENERGY_KWH
-        + (_active_home_hours(citizen) * ACTIVE_HOME_HOUR_KWH)
-        + (float(citizen["Social_Media_Hours"]) * SOCIAL_MEDIA_HOUR_KWH)
-        + (float(citizen["Entertainment_Hours"]) * ENTERTAINMENT_HOUR_KWH)
+def _blend_with_domain(model_value: float, domain_value: float) -> float:
+    """Anchor a learned prediction to its physical estimate."""
+    blended = (model_value * MODEL_WEIGHT) + (domain_value * DOMAIN_WEIGHT)
+    return _clamp(
+        blended,
+        domain_value * PLAUSIBLE_LOWER_RATIO,
+        domain_value * PLAUSIBLE_UPPER_RATIO,
     )
 
 
 def _adjust_energy_prediction(model_energy: float, citizen: Dict[str, object]) -> float:
-    activity_energy = _activity_energy_estimate(citizen)
-    blended_energy = (model_energy * MODEL_ENERGY_WEIGHT) + (
-        activity_energy * (1.0 - MODEL_ENERGY_WEIGHT)
-    )
-    active_hour_ratio = _active_home_hours(citizen) / BASELINE_ACTIVE_HOME_HOURS
-    return _clamp(blended_energy, model_energy * 0.45, model_energy * max(0.8, active_hour_ratio + 0.25))
+    return _blend_with_domain(model_energy, home_energy_kwh(citizen))
+
+
+def _adjust_carbon_prediction(
+    model_carbon: float, citizen: Dict[str, object], energy_kwh: float
+) -> float:
+    return _blend_with_domain(model_carbon, carbon_footprint_kg(citizen, energy_kwh=energy_kwh))
 
 
 def _period_metrics(energy_value: float, carbon_value: float) -> Dict[str, Dict[str, float]]:
@@ -187,7 +184,9 @@ class SmartCityService:
         model_energy = self.energy_model.predict(citizen)
         predicted_energy = citizen[ENERGY_TARGET] if has_energy_override else _adjust_energy_prediction(model_energy, citizen)
         citizen[ENERGY_TARGET] = predicted_energy
-        predicted_carbon = self.carbon_model.predict(citizen)
+        predicted_carbon = _adjust_carbon_prediction(
+            self.carbon_model.predict(citizen), citizen, predicted_energy
+        )
         bounded_energy = _bounded_prediction(predicted_energy)
         bounded_carbon = _bounded_prediction(predicted_carbon)
 
@@ -243,7 +242,9 @@ class SmartCityService:
             model_energy = self.energy_model.predict(working)
             predicted_energy = _adjust_energy_prediction(model_energy, working)
             working[ENERGY_TARGET] = predicted_energy
-            predicted_carbon = self.carbon_model.predict(working)
+            predicted_carbon = _adjust_carbon_prediction(
+                self.carbon_model.predict(working), working, predicted_energy
+            )
             predicted_energies.append(max(predicted_energy, 0.0))
             predicted_carbons.append(max(predicted_carbon, 0.0))
             transport_counter[str(record["Mode_of_Transport"])] += 1

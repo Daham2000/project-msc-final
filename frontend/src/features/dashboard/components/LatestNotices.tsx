@@ -1,6 +1,7 @@
+import { AppIcon } from "../../../components/AppIcon";
 import type { Announcement } from "../../../types/api";
 import { formatShortDate } from "../../../utils/format";
-import { formatAudienceLabel } from "../utils";
+import { formatAudienceLabel, formatReachLabel } from "../utils";
 
 interface LatestNoticesProps {
   announcements: Announcement[];
@@ -22,6 +23,10 @@ export function LatestNotices({ announcements, emptyMessage }: LatestNoticesProp
           </div>
           <h3>{item.title}</h3>
           <p>{item.message}</p>
+          <div className="announcement-reach">
+            <AppIcon name={item.audience_scope === "island_wide" ? "city" : "location"} />
+            <span>{formatReachLabel(item.audience_scope, item.cities)}</span>
+          </div>
         </article>
       ))}
     </div>

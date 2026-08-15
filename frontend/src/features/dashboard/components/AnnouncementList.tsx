@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import type { Announcement } from "../../../types/api";
 import { formatDate } from "../../../utils/format";
-import { formatAudienceLabel } from "../utils";
+import { formatAudienceLabel, formatReachLabel } from "../utils";
 import { AppIcon } from "../../../components/AppIcon";
 
 interface AnnouncementListProps {
@@ -41,6 +41,10 @@ export function AnnouncementList({
           </div>
           <h3>{item.title}</h3>
           <p>{item.message}</p>
+          <div className="announcement-reach">
+            <AppIcon name={item.audience_scope === "island_wide" ? "city" : "location"} />
+            <span>{formatReachLabel(item.audience_scope, item.cities)}</span>
+          </div>
           <footer className="announcement-footer">
             <span>Posted by {item.created_by.full_name}</span>
             {isAdmin && onDelete ? (

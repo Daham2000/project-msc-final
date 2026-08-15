@@ -6,7 +6,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Config:
-    DATASET_PATH = str(BASE_DIR.parent / "smart_city_citizen_activity.csv")
+    # v2 is the physically consistent rebuild produced by scripts/rebuild_dataset.py.
+    # The original export stored random energy/carbon targets, so transport mode had
+    # no effect on the prediction.
+    DATASET_PATH = os.getenv(
+        "DATASET_PATH", str(BASE_DIR.parent / "smart_city_citizen_activity_v2.csv")
+    )
+    CITIES_PATH = os.getenv("CITIES_PATH", str(BASE_DIR / "app" / "data" / "sri_lanka_cities.json"))
     SECRET_KEY = os.getenv("SECRET_KEY", "smart-city-dev-secret")
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
     MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "smart_city_dashboard")

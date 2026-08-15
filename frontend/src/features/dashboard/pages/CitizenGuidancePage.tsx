@@ -38,8 +38,10 @@ export function CitizenGuidancePage() {
 
   const daily = citizenResult?.predictions.daily_average;
   const monthly = citizenResult?.predictions.monthly_average;
-  const maxEnergy = daily ? Math.max(daily.predicted_energy_consumption_kwh * 1.4, 30) : 1;
-  const maxCarbon = daily ? Math.max(daily.predicted_carbon_footprint_kgco2 * 1.4, 15) : 1;
+  // Floors are the upper end of a typical daily profile, so a low-footprint
+  // citizen still renders as a visibly short bar rather than an empty one.
+  const maxEnergy = daily ? Math.max(daily.predicted_energy_consumption_kwh * 1.4, 10) : 1;
+  const maxCarbon = daily ? Math.max(daily.predicted_carbon_footprint_kgco2 * 1.4, 12) : 1;
 
   return (
     <div className="dashboard-grid">

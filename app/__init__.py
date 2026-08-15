@@ -4,6 +4,7 @@ from .config import Config
 from .routes import api_bp
 from .services.auth_service import AuthService
 from .services.database_service import DatabaseService
+from .services.location_service import LocationService
 from .services.smart_city_service import SmartCityService
 
 
@@ -13,9 +14,11 @@ def create_app() -> Flask:
 
     service = SmartCityService(dataset_path=app.config["DATASET_PATH"])
     service.train()
+    location_service = LocationService(dataset_path=app.config["CITIES_PATH"])
     database_service = DatabaseService(
         mongo_uri=app.config["MONGO_URI"],
         database_name=app.config["MONGO_DB_NAME"],
+        location_service=location_service,
     )
     database_service.ensure_indexes()
     database_service.ensure_default_admin(
@@ -28,6 +31,7 @@ def create_app() -> Flask:
     app.extensions["smart_city_service"] = service
     app.extensions["database_service"] = database_service
     app.extensions["auth_service"] = auth_service
+    app.extensions["location_service"] = location_service
     app.register_blueprint(api_bp, url_prefix="/api/v1")
 
     @app.after_request
