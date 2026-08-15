@@ -1,14 +1,14 @@
-import type { DashboardNavItem, DashboardRouteId } from "./types";
+import type { DashboardNavGroup, DashboardNavItem, DashboardRouteId } from "./types";
 
 export const dashboardRoutes: DashboardNavItem[] = [
-  { id: "overview", label: "Overview", icon: "overview", path: "/" },
-  { id: "profile", label: "Profile", icon: "profile", path: "/profile" },
-  { id: "citizen", label: "Guidance", icon: "guidance", path: "/citizen" },
-  { id: "city", label: "City Planning", icon: "city", path: "/city", adminOnly: true },
-  { id: "announcements", label: "Notices", icon: "notice", path: "/announcements" },
-  { id: "metadata", label: "Service Data", icon: "data", path: "/metadata", adminOnly: true },
-  { id: "users", label: "Users", icon: "users", path: "/users", adminOnly: true },
-  { id: "broadcast", label: "Publish", icon: "broadcast", path: "/broadcast", adminOnly: true },
+  { id: "overview", label: "Overview", icon: "overview", path: "/", group: "Workspace" },
+  { id: "profile", label: "Profile", icon: "profile", path: "/profile", group: "Workspace" },
+  { id: "citizen", label: "Guidance", icon: "guidance", path: "/citizen", group: "Workspace" },
+  { id: "announcements", label: "Notices", icon: "notice", path: "/announcements", group: "Workspace" },
+  { id: "city", label: "City Planning", icon: "city", path: "/city", adminOnly: true, group: "Administration" },
+  { id: "users", label: "Users", icon: "users", path: "/users", adminOnly: true, group: "Administration" },
+  { id: "broadcast", label: "Publish", icon: "broadcast", path: "/broadcast", adminOnly: true, group: "Administration" },
+  { id: "metadata", label: "Service Data", icon: "data", path: "/metadata", adminOnly: true, group: "Administration" },
 ];
 
 export function getDashboardNavItems(isAdmin: boolean) {
@@ -19,6 +19,14 @@ export function getDashboardNavItems(isAdmin: boolean) {
         ? { ...route, label: isAdmin ? "Assessment" : "Guidance" }
         : route
     );
+}
+
+export function getGroupedNavItems(isAdmin: boolean) {
+  const items = getDashboardNavItems(isAdmin);
+  const groups: DashboardNavGroup[] = ["Workspace", "Administration"];
+  return groups
+    .map((group) => ({ group, items: items.filter((item) => item.group === group) }))
+    .filter((entry) => entry.items.length > 0);
 }
 
 export function getRouteIdForPath(pathname: string): DashboardRouteId {

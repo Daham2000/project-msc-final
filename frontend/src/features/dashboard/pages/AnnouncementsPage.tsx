@@ -11,7 +11,7 @@ export function AnnouncementsPage() {
   const isAdmin = user?.role === "admin";
 
   const handleAnnouncementDelete = async (announcementId: string) => {
-    if (!token || !window.confirm("Delete this service notice now?")) {
+    if (!token) {
       return;
     }
 

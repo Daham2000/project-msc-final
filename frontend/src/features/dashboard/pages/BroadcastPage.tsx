@@ -28,54 +28,70 @@ export function BroadcastPage() {
       .catch(() => undefined);
   };
 
+  const isAll = announcementForm.audience_role === "all";
+
   return (
-    <form className="panel panel-narrow" onSubmit={handleAnnouncementSubmit}>
-      <div className="panel-title">
-        <AppIcon name="broadcast" />
-        <div className="panel-title-copy">
-          <div className="panel-heading">Publish a service notice</div>
-          <p>Share a clear message with citizens or with all platform users when services change or new green initiatives are introduced.</p>
+    <div className="dashboard-grid">
+      <form className="panel" onSubmit={handleAnnouncementSubmit}>
+        <div className="panel-title">
+          <AppIcon name="broadcast" />
+          <div className="panel-title-copy">
+            <div className="panel-heading">Publish a service notice</div>
+            <p>Share a clear message with citizens or with all platform users when services change or new green initiatives are introduced.</p>
+          </div>
         </div>
+        <label className="field">
+          <span>Notice title</span>
+          <input
+            type="text"
+            value={announcementForm.title}
+            onChange={(event) => dispatch(setAnnouncementForm({ ...announcementForm, title: event.target.value }))}
+            required
+          />
+        </label>
+        <label className="field">
+          <span>Notice message</span>
+          <textarea
+            rows={6}
+            value={announcementForm.message}
+            onChange={(event) => dispatch(setAnnouncementForm({ ...announcementForm, message: event.target.value }))}
+            required
+          />
+        </label>
+        <label className="field">
+          <span>Audience</span>
+          <select
+            value={announcementForm.audience_role}
+            onChange={(event) =>
+              dispatch(
+                setAnnouncementForm({
+                  ...announcementForm,
+                  audience_role: event.target.value as "citizen" | "all",
+                })
+              )
+            }
+          >
+            <option value="citizen">Citizens</option>
+            <option value="all">All users</option>
+          </select>
+        </label>
+        <button className="primary-button" disabled={busySection === "broadcast"} type="submit">
+          <AppIcon name="broadcast" />
+          {busySection === "broadcast" ? "Publishing notice..." : "Publish notice"}
+        </button>
+      </form>
+
+      <div className="panel panel-narrow" style={{ alignContent: "start", gap: "0.7rem" }}>
+        <div className="live-preview-label">Live preview</div>
+        <article className={`announcement-card ${isAll ? "audience-all" : ""}`}>
+          <div className="announcement-meta">
+            <span>{isAll ? "All users" : "Citizens"}</span>
+            <small>Just now</small>
+          </div>
+          <h3>{announcementForm.title || "Notice title preview"}</h3>
+          <p>{announcementForm.message || "Your notice message will appear here as you type."}</p>
+        </article>
       </div>
-      <label className="field">
-        <span>Notice title</span>
-        <input
-          type="text"
-          value={announcementForm.title}
-          onChange={(event) => dispatch(setAnnouncementForm({ ...announcementForm, title: event.target.value }))}
-          required
-        />
-      </label>
-      <label className="field">
-        <span>Notice message</span>
-        <textarea
-          rows={6}
-          value={announcementForm.message}
-          onChange={(event) => dispatch(setAnnouncementForm({ ...announcementForm, message: event.target.value }))}
-          required
-        />
-      </label>
-      <label className="field">
-        <span>Audience</span>
-        <select
-          value={announcementForm.audience_role}
-          onChange={(event) =>
-            dispatch(
-              setAnnouncementForm({
-                ...announcementForm,
-                audience_role: event.target.value as "citizen" | "all",
-              })
-            )
-          }
-        >
-          <option value="citizen">Citizens</option>
-          <option value="all">All users</option>
-        </select>
-      </label>
-      <button className="primary-button" disabled={busySection === "broadcast"} type="submit">
-        <AppIcon name="broadcast" />
-        {busySection === "broadcast" ? "Publishing notice..." : "Publish notice"}
-      </button>
-    </form>
+    </div>
   );
 }

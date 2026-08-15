@@ -7,6 +7,16 @@ import { MetricLine } from "../components/MetricLine";
 import { StatCard } from "../components/StatCard";
 import { profileStatusLabel } from "../utils";
 
+function initialsOf(fullName: string) {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 export function ProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -31,18 +41,18 @@ export function ProfilePage() {
 
   return (
     <div className="dashboard-grid">
-      <div className="panel span-full panel-accent">
-        <div className="section-header">
-          <div className="panel-title">
-            <AppIcon name="profile" />
-            <div className="panel-title-copy">
-              <div className="panel-heading">Profile details</div>
-              <p>Review the account information associated with your sustainable city services access.</p>
-            </div>
-          </div>
-          <span className="summary-badge">{isAdmin ? "Administrative account" : "Citizen account"}</span>
+      <div className="panel span-full panel-accent" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "1.1rem" }}>
+        <span className="avatar avatar-lg" aria-hidden="true">
+          {initialsOf(user.full_name)}
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div className="eyebrow">{isAdmin ? "Administrative account" : "Citizen account"}</div>
+          <h2 style={{ marginBottom: "0.2rem" }}>{user.full_name}</h2>
+          <p style={{ margin: 0, color: "var(--text-soft)", fontSize: "0.9rem" }}>{user.email}</p>
         </div>
+      </div>
 
+      <div className="panel span-full">
         <div className="stats-grid">
           <StatCard icon="shield" label="Account role" value={isAdmin ? "Administrator" : "Citizen"} tone="cool" />
           <StatCard icon="calendar" label="Last sign-in" value={formatShortDate(user.last_login_at)} />

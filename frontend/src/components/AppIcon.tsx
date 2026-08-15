@@ -19,7 +19,11 @@ export type AppIconName =
   | "spark"
   | "location"
   | "mail"
-  | "phone";
+  | "phone"
+  | "search"
+  | "trash"
+  | "check"
+  | "plus";
 
 type AppIconProps = SVGProps<SVGSVGElement> & {
   name: AppIconName;
@@ -163,6 +167,33 @@ export function AppIcon({ name, ...props }: AppIconProps) {
       return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" {...props}>
           <path d="M7.8 4.5h2.6l1.1 4-1.8 1.7a14 14 0 0 0 4.1 4.1l1.7-1.8 4 1.1v2.6c0 .8-.6 1.5-1.4 1.5A13.9 13.9 0 0 1 4.5 5.9c0-.8.7-1.4 1.5-1.4Z" />
+        </svg>
+      );
+    case "search":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" {...props}>
+          <circle cx="10.5" cy="10.5" r="7" />
+          <path d="m20.5 20.5-4.35-4.35" />
+        </svg>
+      );
+    case "trash":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" {...props}>
+          <path d="M5 7h14" />
+          <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          <path d="m7 7 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" />
+        </svg>
+      );
+    case "check":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" {...props}>
+          <path d="m5 12.5 4.5 4.5L19 7" />
+        </svg>
+      );
+    case "plus":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" {...props}>
+          <path d="M12 5v14M5 12h14" />
         </svg>
       );
     default:

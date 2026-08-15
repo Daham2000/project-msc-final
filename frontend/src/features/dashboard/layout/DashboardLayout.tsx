@@ -5,7 +5,6 @@ import { useAuth } from "../../../auth/AuthContext";
 import { AppIcon } from "../../../components/AppIcon";
 import { useAnnouncementNotifications } from "../../../hooks/useAnnouncementNotifications";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { formatShortDate } from "../../../utils/format";
 import {
   loadDashboardData,
   receiveAnnouncement,
@@ -14,11 +13,22 @@ import {
 } from "../dashboardSlice";
 import {
   getDashboardNavItems,
+  getGroupedNavItems,
   getRouteIdForPath,
   getRouteMeta,
   tabDescription,
   tabTitle,
 } from "../navigation";
+
+function initialsOf(fullName: string) {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
 
 export function DashboardLayout() {
   const { token, user, logout } = useAuth();
@@ -30,6 +40,7 @@ export function DashboardLayout() {
   const isAdmin = user?.role === "admin";
   const routeId = getRouteIdForPath(location.pathname);
   const navItems = useMemo(() => getDashboardNavItems(isAdmin), [isAdmin]);
+  const navGroups = useMemo(() => getGroupedNavItems(isAdmin), [isAdmin]);
   const currentRoute = getRouteMeta(routeId, isAdmin);
 
   useEffect(() => {
@@ -102,44 +113,42 @@ export function DashboardLayout() {
               <h1>{isAdmin ? "Green city administration" : "Sustainable living portal"}</h1>
             </div>
           </div>
-          <p className="sidebar-copy">
-            {isAdmin
-              ? "Manage sustainability notices, assessments, and resident service information."
-              : "Review guidance, notices, and account information from your local service team."}
-          </p>
         </div>
 
         <div className="profile-card sidebar-profile-card">
-          <div className="profile-card-header">
-            <span className="profile-avatar" aria-hidden="true">
-              <AppIcon name="profile" />
-            </span>
-            <div>
-              <span className="profile-label">{isAdmin ? "Authorized officer" : "Citizen account"}</span>
-              <strong>{user.full_name}</strong>
-            </div>
+          <span className="avatar" aria-hidden="true">
+            {initialsOf(user.full_name)}
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <span className="profile-label">{isAdmin ? "Authorized officer" : "Citizen account"}</span>
+            <strong>{user.full_name}</strong>
           </div>
-
-
         </div>
 
-        <nav className="tab-list" aria-label="Portal sections">
-          {navItems.map((entry) => (
-            <NavLink
-              key={entry.id}
-              className={({ isActive }) => (isActive ? "tab-button active" : "tab-button")}
-              onClick={() => {
-                if (entry.id === "citizen") {
-                  dispatch(setCitizenResultView("summary"));
-                }
-              }}
-              to={entry.path}
-            >
-              <span className="tab-button-icon" aria-hidden="true">
-                <AppIcon name={entry.icon} />
-              </span>
-              <span>{entry.label}</span>
-            </NavLink>
+        <nav aria-label="Portal sections" style={{ display: "grid", overflowY: "auto" }}>
+          {navGroups.map((group) => (
+            <div className="nav-group" key={group.group}>
+              <div className="nav-group-title">{group.group}</div>
+              <div className="tab-list">
+                {group.items.map((entry) => (
+                  <NavLink
+                    key={entry.id}
+                    className={({ isActive }) => (isActive ? "tab-button active" : "tab-button")}
+                    onClick={() => {
+                      if (entry.id === "citizen") {
+                        dispatch(setCitizenResultView("summary"));
+                      }
+                    }}
+                    to={entry.path}
+                  >
+                    <span className="tab-button-icon" aria-hidden="true">
+                      <AppIcon name={entry.icon} />
+                    </span>
+                    <span>{entry.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

@@ -36,6 +36,11 @@ export function CitizenGuidancePage() {
     await dispatch(predictCitizen({ token, form: citizenForm })).unwrap().catch(() => undefined);
   };
 
+  const daily = citizenResult?.predictions.daily_average;
+  const monthly = citizenResult?.predictions.monthly_average;
+  const maxEnergy = daily ? Math.max(daily.predicted_energy_consumption_kwh * 1.4, 30) : 1;
+  const maxCarbon = daily ? Math.max(daily.predicted_carbon_footprint_kgco2 * 1.4, 15) : 1;
+
   return (
     <div className="dashboard-grid">
       <form className="panel" onSubmit={handleCitizenPredict}>
@@ -75,15 +80,45 @@ export function CitizenGuidancePage() {
         {citizenResult ? (
           <>
             {!showRecommendationsOnly ? (
-              <div className="stats-grid single-column">
-                <StatCard icon="energy" label="Personal energy estimate" value={`${formatNumber(citizenResult.predictions.predicted_energy_consumption_kwh)} kWh`} />
-                <StatCard icon="carbon" label="Estimated carbon footprint" value={`${formatNumber(citizenResult.predictions.predicted_carbon_footprint_kgco2)} kgCO2`} tone="warm" />
-                <StatCard icon="leaf" label="Sustainability band" value={citizenResult.predictions.sustainability_band} tone="cool" />
-                <StatCard icon="energy" label="Average energy per day" value={`${formatNumber(citizenResult.predictions.daily_average.predicted_energy_consumption_kwh)} kWh`} />
-                <StatCard icon="carbon" label="Average carbon per day" value={`${formatNumber(citizenResult.predictions.daily_average.predicted_carbon_footprint_kgco2)} kgCO2`} tone="warm" />
-                <StatCard icon="energy" label="Projected energy per 30-day month" value={`${formatNumber(citizenResult.predictions.monthly_average.predicted_energy_consumption_kwh)} kWh`} />
-                <StatCard icon="carbon" label="Projected carbon per 30-day month" value={`${formatNumber(citizenResult.predictions.monthly_average.predicted_carbon_footprint_kgco2)} kgCO2`} tone="warm" />
-              </div>
+              <>
+                <div className="stats-grid single-column">
+                  <StatCard icon="energy" label="Personal energy estimate" value={`${formatNumber(citizenResult.predictions.predicted_energy_consumption_kwh)} kWh`} />
+                  <StatCard icon="carbon" label="Estimated carbon footprint" value={`${formatNumber(citizenResult.predictions.predicted_carbon_footprint_kgco2)} kgCO2`} tone="warm" />
+                  <StatCard icon="leaf" label="Sustainability band" value={citizenResult.predictions.sustainability_band} tone="cool" />
+                </div>
+
+                {daily && monthly ? (
+                  <div className="panel" style={{ padding: "1.1rem", background: "var(--surface-soft)", boxShadow: "none" }}>
+                    <div className="panel-heading" style={{ marginBottom: "0.2rem" }}>Daily vs. monthly impact</div>
+                    <div className="two-column-grid">
+                      <div style={{ display: "grid", gap: "0.5rem" }}>
+                        <div className="transport-label"><span>Energy (kWh)</span></div>
+                        <div className="progress-track">
+                          <div
+                            className="progress-fill"
+                            style={{ width: `${Math.min(100, (daily.predicted_energy_consumption_kwh / maxEnergy) * 100)}%` }}
+                          />
+                        </div>
+                        <span style={{ fontSize: "0.78rem", color: "var(--text-soft)" }}>
+                          Daily {formatNumber(daily.predicted_energy_consumption_kwh)} · Monthly {formatNumber(monthly.predicted_energy_consumption_kwh, 0)}
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gap: "0.5rem" }}>
+                        <div className="transport-label"><span>Carbon (kgCO2)</span></div>
+                        <div className="progress-track">
+                          <div
+                            className="progress-fill warm"
+                            style={{ width: `${Math.min(100, (daily.predicted_carbon_footprint_kgco2 / maxCarbon) * 100)}%` }}
+                          />
+                        </div>
+                        <span style={{ fontSize: "0.78rem", color: "var(--text-soft)" }}>
+                          Daily {formatNumber(daily.predicted_carbon_footprint_kgco2)} · Monthly {formatNumber(monthly.predicted_carbon_footprint_kgco2, 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </>
             ) : null}
 
             <RecommendationBlock icon="transport" title="Lower-impact travel and lifestyle options" items={citizenResult.recommendations.eco_friendly_alternatives} />

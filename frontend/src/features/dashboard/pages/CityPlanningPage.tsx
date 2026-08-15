@@ -4,7 +4,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../auth/AuthContext";
 import { AppIcon } from "../../../components/AppIcon";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { formatNumber } from "../../../utils/format";
+import { formatCompactNumber, formatNumber } from "../../../utils/format";
 import { CitizenForm } from "../CitizenForm";
 import { StatCard } from "../components/StatCard";
 import {
@@ -16,6 +16,20 @@ import {
 
 const fallbackGenderOptions = ["Female", "Male", "Other"];
 const fallbackTransportOptions = ["Walking", "Bike", "Bicycle", "Car", "Public Transport", "EV"];
+
+const BAND_CLASS: Record<string, string> = {
+  Excellent: "band-excellent",
+  Good: "band-good",
+  Moderate: "band-moderate",
+  "Needs improvement": "band-poor",
+};
+
+const BAND_STYLE: Record<string, { background: string; color: string }> = {
+  Excellent: { background: "var(--accent-soft)", color: "var(--accent-strong)" },
+  Good: { background: "var(--accent-blue-soft)", color: "var(--accent-blue)" },
+  Moderate: { background: "var(--accent-warm-soft)", color: "var(--accent-warm)" },
+  "Needs improvement": { background: "var(--danger-soft)", color: "var(--danger)" },
+};
 
 export function CityPlanningPage() {
   const { token, user } = useAuth();
@@ -38,6 +52,10 @@ export function CityPlanningPage() {
     await dispatch(predictCity({ token, forms: cityForms })).unwrap().catch(() => undefined);
   };
 
+  const maxMonthlyEnergy = cityResult
+    ? Math.max(...cityResult.citizen_predictions.map((item) => item.predictions.monthly_average.predicted_energy_consumption_kwh), 1)
+    : 1;
+
   return (
     <div className="dashboard-grid">
       <form className="panel span-full" onSubmit={handleCityPredict}>
@@ -50,7 +68,7 @@ export function CityPlanningPage() {
             </div>
           </div>
           <button className="secondary-button" type="button" onClick={() => dispatch(addCityCitizen())}>
-            <AppIcon name="profile" />
+            <AppIcon name="plus" />
             Add profile
           </button>
         </div>
@@ -61,7 +79,8 @@ export function CityPlanningPage() {
               <div className="section-header">
                 <strong>Profile #{index + 1}</strong>
                 {cityForms.length > 1 ? (
-                  <button className="ghost-button" type="button" onClick={() => dispatch(removeCityCitizen(index))}>
+                  <button className="danger-ghost-button" type="button" onClick={() => dispatch(removeCityCitizen(index))}>
+                    <AppIcon name="trash" />
                     Remove
                   </button>
                 ) : null}
@@ -104,6 +123,25 @@ export function CityPlanningPage() {
               <StatCard icon="energy" label="Total energy demand" value={`${formatNumber(cityResult.total_predicted_energy_kwh)} kWh`} />
             </div>
 
+            {cityResult.citizen_predictions.length ? (
+              <div>
+                <div className="form-group-title" style={{ marginBottom: "0.6rem" }}>Monthly energy per profile (kWh)</div>
+                <div className="bar-chart">
+                  {cityResult.citizen_predictions.map((item, index) => {
+                    const value = item.predictions.monthly_average.predicted_energy_consumption_kwh;
+                    const heightPct = Math.max(6, (value / maxMonthlyEnergy) * 100);
+                    return (
+                      <div className="bar-col" key={`bar-${item.citizen_id ?? index}`}>
+                        <span className="bar-value">{formatCompactNumber(value)}</span>
+                        <div className="bar-fill" style={{ height: `${heightPct}%` }} />
+                        <span className="bar-label">#{item.citizen_id ?? index + 1}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
             <div className="table-wrap">
               <table>
                 <thead>
@@ -124,7 +162,14 @@ export function CityPlanningPage() {
                       <td>{formatNumber(item.predictions.monthly_average.predicted_energy_consumption_kwh)} kWh</td>
                       <td>{formatNumber(item.predictions.daily_average.predicted_carbon_footprint_kgco2)} kgCO2</td>
                       <td>{formatNumber(item.predictions.monthly_average.predicted_carbon_footprint_kgco2)} kgCO2</td>
-                      <td>{item.predictions.sustainability_band}</td>
+                      <td>
+                        <span
+                          className={`band-badge ${BAND_CLASS[item.predictions.sustainability_band] ?? ""}`}
+                          style={BAND_STYLE[item.predictions.sustainability_band] ?? BAND_STYLE.Good}
+                        >
+                          {item.predictions.sustainability_band}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

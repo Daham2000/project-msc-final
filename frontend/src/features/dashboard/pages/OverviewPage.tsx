@@ -9,6 +9,14 @@ import { MetricLine } from "../components/MetricLine";
 import { StatCard } from "../components/StatCard";
 import { firstName, profileStatusLabel } from "../utils";
 
+const DONUT_COLORS = [
+  "oklch(0.56 0.13 150)",
+  "oklch(0.56 0.11 235)",
+  "oklch(0.68 0.13 75)",
+  "oklch(0.58 0.16 25)",
+  "oklch(0.6 0.1 300)",
+];
+
 export function OverviewPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -214,6 +222,25 @@ function TransportDistribution({
   transportEntries: [string, number][];
   totalProfiles: number;
 }) {
+  const total = transportEntries.reduce((sum, [, count]) => sum + count, 0) || 1;
+  const r = 52;
+  const circumference = 2 * Math.PI * r;
+  let acc = 0;
+  const segments = transportEntries.map(([mode, count], index) => {
+    const pct = (count / total) * 100;
+    const dash = (pct / 100) * circumference;
+    const segment = {
+      mode,
+      count,
+      pct: Math.round(pct),
+      color: DONUT_COLORS[index % DONUT_COLORS.length],
+      dasharray: `${dash.toFixed(1)} ${(circumference - dash).toFixed(1)}`,
+      dashoffset: -((acc / 100) * circumference).toFixed(1),
+    };
+    acc += pct;
+    return segment;
+  });
+
   return (
     <div className="panel">
       <div className="panel-title">
@@ -224,18 +251,35 @@ function TransportDistribution({
         </div>
       </div>
       {transportEntries.length && totalProfiles > 0 ? (
-        <div className="transport-bars">
-          {transportEntries.map(([mode, count]) => (
-            <div key={mode} className="transport-row">
-              <div className="transport-label">
-                <span>{mode}</span>
-                <strong>{count}</strong>
+        <div className="donut-panel">
+          <svg className="donut-svg" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r={r} fill="none" stroke="var(--surface-muted)" strokeWidth="16" />
+            {segments.map((segment) => (
+              <circle
+                key={segment.mode}
+                cx="60"
+                cy="60"
+                r={r}
+                fill="none"
+                stroke={segment.color}
+                strokeWidth="16"
+                strokeDasharray={segment.dasharray}
+                strokeDashoffset={segment.dashoffset}
+                strokeLinecap="round"
+              />
+            ))}
+          </svg>
+          <div className="donut-legend">
+            {segments.map((segment) => (
+              <div className="legend-row" key={segment.mode}>
+                <span className="legend-label">
+                  <span className="legend-dot" style={{ background: segment.color }} />
+                  {segment.mode}
+                </span>
+                <strong>{segment.pct}%</strong>
               </div>
-              <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${Math.min((count / totalProfiles) * 100, 100)}%` }}></div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       ) : (
         <div className="empty-state">Transport distribution will appear here once profile data is available.</div>
