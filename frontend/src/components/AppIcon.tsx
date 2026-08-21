@@ -23,7 +23,9 @@ export type AppIconName =
   | "search"
   | "trash"
   | "check"
-  | "plus";
+  | "plus"
+  | "trendUp"
+  | "trendDown";
 
 type AppIconProps = SVGProps<SVGSVGElement> & {
   name: AppIconName;
@@ -194,6 +196,20 @@ export function AppIcon({ name, ...props }: AppIconProps) {
       return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" {...props}>
           <path d="M12 5v14M5 12h14" />
+        </svg>
+      );
+    case "trendUp":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
+          <path d="M4 16 10 10 14 14 20 7" />
+          <path d="M14 6h6v6" />
+        </svg>
+      );
+    case "trendDown":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
+          <path d="M4 8 10 14 14 10 20 17" />
+          <path d="M14 18h6v-6" />
         </svg>
       );
     default:

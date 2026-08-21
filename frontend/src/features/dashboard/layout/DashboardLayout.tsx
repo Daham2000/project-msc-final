@@ -77,11 +77,13 @@ export function DashboardLayout() {
     return null;
   }
 
+  // The design shows a static "Live · synced" pill; keep the real loading and
+  // error states so the indicator still reports something true.
   const statusText = loading
     ? "Refreshing updates"
     : error
       ? "Needs attention"
-      : "Updates are current";
+      : "Live · synced";
 
   const handleRecommendationsShortcut = () => {
     if (!isAdmin) {
@@ -109,7 +111,7 @@ export function DashboardLayout() {
           <div className="sidebar-brand-mark">
             <img className="sidebar-logo" src="/smart-city-logo.png" alt="" />
             <div>
-              <div className="eyebrow">Sustainable City Services</div>
+              <div className="eyebrow">CivicGreen</div>
               <h1>{isAdmin ? "Green city administration" : "Sustainable living portal"}</h1>
             </div>
           </div>
@@ -169,7 +171,7 @@ export function DashboardLayout() {
           <div>
             <div className="eyebrow">
               <AppIcon className="eyebrow-icon" name={currentRoute.icon} />
-              {isAdmin ? "Administration" : "Citizen Services"}
+              {isAdmin ? "Authorized officer workspace" : "Citizen account workspace"}
             </div>
             <div className="header-title">
               <span className="header-icon" aria-hidden="true">

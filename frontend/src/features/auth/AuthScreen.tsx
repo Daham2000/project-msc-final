@@ -30,7 +30,7 @@ export function AuthScreen() {
   const { cities, country, loading: citiesLoading, error: citiesError } = useCities();
 
   const title = useMemo(
-    () => (mode === "login" ? "Access your citizen services account" : "Create your citizen services account"),
+    () => (mode === "login" ? "Access your account" : "Create your account"),
     [mode]
   );
 
@@ -76,14 +76,17 @@ export function AuthScreen() {
       <section className="auth-hero">
         <div className="auth-hero-brand">
           <img className="sidebar-logo" src="/smart-city-logo.png" alt="" style={{ width: "2.75rem", height: "2.75rem" }} />
-          <div className="eyebrow" style={{ marginBottom: 0 }}>Sustainable City Services</div>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 0 }}>Sustainable City Services</div>
+            <div className="brand-name">CivicGreen</div>
+          </div>
         </div>
 
         <div>
-          <h1>City services, guidance, and notices in one secure place.</h1>
+          <h1>City services, guidance, and notices — in one place.</h1>
           <p className="hero-copy">
-            A simple workspace for residents and authorized officers to view local updates, manage account
-            details, and access sustainability guidance from the city.
+            A single workspace for residents and city officers: household sustainability guidance, live
+            notices, and citywide planning data.
           </p>
         </div>
 
@@ -95,7 +98,7 @@ export function AuthScreen() {
               </span>
             </div>
             <strong>Secure access</strong>
-            <span>Sign in to citizen services and authorized administration tools.</span>
+            <span>Role-based sign-in for citizens and officers.</span>
           </div>
           <div className="mini-stat">
             <div className="mini-stat-header">
@@ -104,7 +107,7 @@ export function AuthScreen() {
               </span>
             </div>
             <strong>Personal guidance</strong>
-            <span>Review practical household recommendations in plain language.</span>
+            <span>Plain-language household impact estimates.</span>
           </div>
           <div className="mini-stat">
             <div className="mini-stat-header">
@@ -113,11 +116,11 @@ export function AuthScreen() {
               </span>
             </div>
             <strong>Official notices</strong>
-            <span>Stay informed about local programs, services, and public updates.</span>
+            <span>Stay current on programs and service updates.</span>
           </div>
         </div>
 
-        <div className="auth-hero-footer">© 2026 Sustainable City Services · Local Government Digital Team</div>
+        <div className="auth-hero-footer">© 2026 CivicGreen · Local Government Digital Services</div>
       </section>
 
       <section className="auth-form-side">
@@ -143,8 +146,8 @@ export function AuthScreen() {
             <h2>{title}</h2>
             <p>
               {mode === "login"
-                ? "Sign in with your registered email address to continue."
-                : "Create an account to receive personalized guidance and sustainable living updates."}
+                ? "Sign in with your registered email to continue."
+                : "Register as a citizen to receive personalized sustainability guidance."}
             </p>
           </div>
 

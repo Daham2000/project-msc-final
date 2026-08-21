@@ -24,6 +24,15 @@ class Config:
         ).split(",")
         if origin.strip()
     ]
+    # Vite falls back to the next free port (5176, 5177, ...) when its configured
+    # one is taken, which would otherwise fail CORS on every restart. Accept any
+    # loopback origin in local development; set this to "false" for a deployment,
+    # where CORS_ALLOWED_ORIGINS should list the real front-end origins instead.
+    CORS_ALLOW_LOOPBACK_PORTS = os.getenv("CORS_ALLOW_LOOPBACK_PORTS", "true").lower() not in {
+        "false",
+        "0",
+        "no",
+    }
     DEFAULT_ADMIN_NAME = os.getenv("DEFAULT_ADMIN_NAME", "Local Government Admin")
     DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@smartcity.local")
     DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "Admin@123")

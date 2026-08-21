@@ -45,10 +45,10 @@ export function OverviewPage() {
           </div>
 
           <div className="stats-grid">
-            <StatCard icon="users" label="Citizens profiled" value={formatCompactNumber(summary?.citizens_profiled ?? 0)} tone="cool" />
-            <StatCard icon="energy" label="Total energy demand" value={`${formatCompactNumber(summary?.total_city_energy_kwh ?? 0)} kWh`} />
-            <StatCard icon="carbon" label="Total carbon footprint" value={`${formatCompactNumber(summary?.total_city_carbon_kgco2 ?? 0)} kgCO2`} tone="warm" />
-            <StatCard icon="users" label="Registered users" value={formatCompactNumber(users.length)} />
+            <StatCard delta="Dataset" icon="users" label="Citizens profiled" value={formatCompactNumber(summary?.citizens_profiled ?? 0)} tone="cool" />
+            <StatCard delta="City-wide" icon="energy" label="Total energy demand" value={`${formatCompactNumber(summary?.total_city_energy_kwh ?? 0)} kWh`} />
+            <StatCard delta="City-wide" icon="carbon" label="Total carbon footprint" value={`${formatCompactNumber(summary?.total_city_carbon_kgco2 ?? 0)} kgCO2`} tone="warm" />
+            <StatCard delta="Platform" icon="users" label="Registered users" value={formatCompactNumber(users.length)} />
           </div>
         </div>
 
@@ -120,10 +120,10 @@ export function OverviewPage() {
         </div>
 
         <div className="stats-grid">
-          <StatCard icon="location" label="Service area" value={user.profile.city ?? "Not provided"} tone="cool" />
+          <StatCard delta="Active" icon="location" label="Service area" value={user.profile.city ?? "Not provided"} tone="cool" />
           <StatCard icon="calendar" label="Last sign-in" value={formatShortDate(user.last_login_at)} />
-          <StatCard icon="notice" label="Available notices" value={String(announcements.length)} />
-          <StatCard icon="transport" label="Common local travel" value={summary?.most_common_transport_mode ?? "No data yet"} tone="warm" />
+          <StatCard delta="Published" icon="notice" label="Available notices" value={String(announcements.length)} />
+          <StatCard delta="City-wide" icon="transport" label="Common local travel" value={summary?.most_common_transport_mode ?? "No data yet"} tone="warm" />
         </div>
       </div>
 

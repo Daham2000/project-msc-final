@@ -1,5 +1,8 @@
 :root {
   font-family: Inter, "Aptos", "Segoe UI", Arial, sans-serif;
+  /* Display face carries headings and figures; body text stays on Inter. */
+  --font-display: Manrope, Inter, "Segoe UI", Arial, sans-serif;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -170,6 +173,14 @@ a:hover {
 
 .auth-hero .eyebrow {
   color: oklch(0.85 0.03 150);
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.125rem;
+  line-height: 1.2;
+  color: #fff;
 }
 
 .auth-hero h1 {
@@ -918,6 +929,7 @@ a:hover {
 }
 
 .panel-heading {
+  font-family: var(--font-display);
   font-size: 1.02rem;
   font-weight: 800;
   color: var(--text);
@@ -977,6 +989,31 @@ a:hover {
   box-shadow: none;
 }
 
+.stat-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.stat-card-delta {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.stat-card-delta.up { color: oklch(0.42 0.12 150); }
+.stat-card-delta.down { color: var(--accent-warm); }
+
+.stat-card-delta svg {
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
 .stat-card-icon {
   display: inline-flex !important;
   align-items: center;
@@ -997,7 +1034,7 @@ a:hover {
 
 .stat-card strong {
   display: block;
-  font-family: inherit;
+  font-family: var(--font-display);
   font-size: clamp(1.15rem, 2vw, 1.4rem);
   font-weight: 800;
   line-height: 1.2;
@@ -1474,6 +1511,8 @@ td { color: var(--text); vertical-align: top; }
 
 h1, h2, h3, p { margin-top: 0; }
 
+h1, h2, h3 { font-family: var(--font-display); }
+
 h1 {
   max-width: 14ch;
   margin-bottom: 0.8rem;
@@ -1722,3 +1761,166 @@ h3 { margin-bottom: 0.45rem; font-size: 1rem; line-height: 1.35; }
 }
 
 .announcement-reach svg { width: 0.95rem; height: 0.95rem; color: var(--accent-strong); }
+
+/* ==========================================================================
+   Motion system
+   Mirrors the Smart City Dashboard design canvas: content rises in on entry,
+   charts draw themselves, and interactive surfaces respond to the pointer.
+   The prefers-reduced-motion guard above neutralises everything here.
+   ========================================================================== */
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.7); }
+  65% { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes drawLine {
+  from { stroke-dashoffset: 1800; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes donutIn {
+  from { opacity: 0; transform: rotate(-170deg) scale(0.85); }
+  to { opacity: 1; transform: rotate(-90deg) scale(1); }
+}
+
+@keyframes growBar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes growColumn {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 0 0 oklch(0.6 0.14 150 / 0.55); }
+  70% { box-shadow: 0 0 0 8px oklch(0.6 0.14 150 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.6 0.14 150 / 0); }
+}
+
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes auroraDrift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-3%, 2%, 0) scale(1.08); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* --- Entrance ------------------------------------------------------------ */
+
+.panel,
+.stat-card,
+.announcement-card,
+.action-card,
+.mini-stat,
+.city-citizen-card,
+.recommendation-block {
+  animation: cardIn 0.52s var(--ease-out) both;
+}
+
+/* Stagger the cards within a row/grid so they cascade rather than snap in. */
+.stats-grid > :nth-child(2),
+.dashboard-grid > :nth-child(2),
+.hero-metrics > :nth-child(2) { animation-delay: 0.06s; }
+
+.stats-grid > :nth-child(3),
+.dashboard-grid > :nth-child(3),
+.hero-metrics > :nth-child(3) { animation-delay: 0.12s; }
+
+.stats-grid > :nth-child(4),
+.dashboard-grid > :nth-child(4) { animation-delay: 0.18s; }
+
+.dashboard-grid > :nth-child(5) { animation-delay: 0.24s; }
+.dashboard-grid > :nth-child(6) { animation-delay: 0.3s; }
+
+.announcement-list > :nth-child(2) { animation-delay: 0.06s; }
+.announcement-list > :nth-child(3) { animation-delay: 0.12s; }
+.announcement-list > :nth-child(4) { animation-delay: 0.18s; }
+
+.page-header { animation: riseIn 0.44s var(--ease-out) both; }
+
+/* --- Pointer response ---------------------------------------------------- */
+
+.stat-card,
+.announcement-card,
+.mini-stat {
+  transition:
+    transform 0.28s var(--ease-out),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.stat-card:hover,
+.announcement-card:hover,
+.mini-stat:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 38px oklch(0.35 0.05 150 / 0.11);
+  border-color: oklch(0.84 0.035 150);
+}
+
+/*
+ * Panels are large and often hold forms, so they get emphasis without a lift —
+ * a tall surface shifting under the cursor mid-typing reads as a glitch.
+ */
+.panel {
+  transition: box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.panel:hover {
+  box-shadow: 0 16px 38px oklch(0.35 0.05 150 / 0.09);
+  border-color: oklch(0.86 0.03 150);
+}
+
+.tab-button { transition: transform 0.18s var(--ease-out), background-color 0.2s ease, color 0.2s ease; }
+.tab-button:hover { transform: translateX(4px); }
+.tab-button.active:hover { transform: none; }
+
+.table-wrap tbody tr { transition: background-color 0.18s ease; }
+.table-wrap tbody tr:hover { background: oklch(0.975 0.008 150); }
+
+/* --- Charts and indicators ----------------------------------------------- */
+
+.donut-svg { animation: donutIn 0.95s var(--ease-out) both; }
+
+.progress-fill,
+.bar-fill {
+  animation: growBar 1s var(--ease-out) both;
+  transform-origin: left center;
+}
+
+.bar-col .bar-fill {
+  animation-name: growColumn;
+  transform-origin: bottom center;
+}
+
+.status-dot.online { animation: glowPulse 2.4s ease-in-out infinite; }
+
+.sidebar-badge svg { animation: floatY 4.2s ease-in-out infinite; }
+
+.alert.error { animation: nudge 0.45s ease-in-out both; }
+
+.auth-hero::before { animation: auroraDrift 18s ease-in-out infinite; }
