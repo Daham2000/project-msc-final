@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../../auth/AuthContext";
@@ -36,12 +36,46 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { announcementStreamSinceId, error, loading } = useAppSelector((state) => state.dashboard);
+  const [navOpen, setNavOpen] = useState(false);
 
   const isAdmin = user?.role === "admin";
   const routeId = getRouteIdForPath(location.pathname);
   const navItems = useMemo(() => getDashboardNavItems(isAdmin), [isAdmin]);
   const navGroups = useMemo(() => getGroupedNavItems(isAdmin), [isAdmin]);
   const currentRoute = getRouteMeta(routeId, isAdmin);
+
+  // The drawer only exists below 1100px; closing on every route change keeps
+  // it from staying open behind whatever page a nav link just opened.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!navOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNavOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [navOpen]);
+
+  useEffect(() => {
+    if (!navOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [navOpen]);
 
   useEffect(() => {
     if (!token || !user) {
@@ -106,7 +140,13 @@ export function DashboardLayout() {
         Skip to main content
       </a>
 
-      <aside className="sidebar" aria-label="Primary navigation">
+      <div
+        className={`nav-backdrop ${navOpen ? "nav-open" : ""}`}
+        onClick={() => setNavOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside className={`sidebar ${navOpen ? "nav-open" : ""}`} aria-label="Primary navigation">
         <div className="sidebar-brand">
           <div className="sidebar-brand-mark">
             <img className="sidebar-logo" src="/smart-city-logo.png" alt="" />
@@ -127,7 +167,11 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        <nav aria-label="Portal sections" style={{ display: "grid", overflowY: "auto" }}>
+        <nav
+          aria-label="Portal sections"
+          className="sidebar-nav"
+          style={{ display: "grid", overflowY: "auto", overflowX: "hidden" }}
+        >
           {navGroups.map((group) => (
             <div className="nav-group" key={group.group}>
               <div className="nav-group-title">{group.group}</div>
@@ -181,9 +225,20 @@ export function DashboardLayout() {
             </div>
             <p className="page-subtitle">{tabDescription(routeId, isAdmin)}</p>
           </div>
-          <div className="status-pill" role="status" aria-live="polite">
-            <span className={`status-dot ${error ? "warning" : loading ? "pending" : "online"}`}></span>
-            {statusText}
+          <div className="header-actions">
+            <button
+              className="nav-toggle"
+              type="button"
+              aria-label="Open menu"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen((open) => !open)}
+            >
+              <AppIcon name="menu" />
+            </button>
+            <div className="status-pill" role="status" aria-live="polite">
+              <span className={`status-dot ${error ? "warning" : loading ? "pending" : "online"}`}></span>
+              {statusText}
+            </div>
           </div>
         </header>
 

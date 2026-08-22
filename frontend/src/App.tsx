@@ -9,7 +9,6 @@ import { CitizenGuidancePage } from "./features/dashboard/pages/CitizenGuidanceP
 import { CityPlanningPage } from "./features/dashboard/pages/CityPlanningPage";
 import { OverviewPage } from "./features/dashboard/pages/OverviewPage";
 import { ProfilePage } from "./features/dashboard/pages/ProfilePage";
-import { ServiceDataPage } from "./features/dashboard/pages/ServiceDataPage";
 import { UsersPage } from "./features/dashboard/pages/UsersPage";
 
 export default function App() {
@@ -35,7 +34,6 @@ export default function App() {
         <Route path="citizen" element={<CitizenGuidancePage />} />
         <Route path="city" element={<CityPlanningPage />} />
         <Route path="announcements" element={<AnnouncementsPage />} />
-        <Route path="metadata" element={<ServiceDataPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="broadcast" element={<BroadcastPage />} />
         <Route path="*" element={<Navigate replace to="/" />} />

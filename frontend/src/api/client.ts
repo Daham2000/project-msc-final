@@ -57,7 +57,7 @@ async function request<T>(
   return payload as T;
 }
 
-export const api = {
+export const api = Object.freeze({
   getHealth: () => request<HealthResponse>("/health"),
   // Unauthenticated: the registration form needs it before an account exists.
   getCities: () => request<CitiesResponse>("/cities"),
@@ -109,6 +109,6 @@ export const api = {
     ),
   deleteAnnouncement: (announcementId: string, token: string) =>
     request<{ message: string }>(`/admin/announcements/${announcementId}`, { method: "DELETE" }, token),
-};
+});  
 
 export { ApiError, API_BASE_URL };

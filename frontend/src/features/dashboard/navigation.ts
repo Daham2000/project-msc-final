@@ -2,18 +2,17 @@ import type { DashboardNavGroup, DashboardNavItem, DashboardRouteId } from "./ty
 
 export const dashboardRoutes: DashboardNavItem[] = [
   { id: "overview", label: "Overview", icon: "overview", path: "/", group: "Workspace" },
-  { id: "profile", label: "Profile", icon: "profile", path: "/profile", group: "Workspace" },
+  { id: "profile", label: "Profile", icon: "profile", path: "/profile", citizenOnly: true, group: "Workspace" },
   { id: "citizen", label: "Guidance", icon: "guidance", path: "/citizen", group: "Workspace" },
   { id: "announcements", label: "Notices", icon: "notice", path: "/announcements", group: "Workspace" },
   { id: "city", label: "City Planning", icon: "city", path: "/city", adminOnly: true, group: "Administration" },
   { id: "users", label: "Users", icon: "users", path: "/users", adminOnly: true, group: "Administration" },
   { id: "broadcast", label: "Publish", icon: "broadcast", path: "/broadcast", adminOnly: true, group: "Administration" },
-  { id: "metadata", label: "Service Data", icon: "data", path: "/metadata", adminOnly: true, group: "Administration" },
 ];
 
 export function getDashboardNavItems(isAdmin: boolean) {
   return dashboardRoutes
-    .filter((route) => isAdmin || !route.adminOnly)
+    .filter((route) => (isAdmin || !route.adminOnly) && (!isAdmin || !route.citizenOnly))
     .map((route) =>
       route.id === "citizen"
         ? { ...route, label: isAdmin ? "Assessment" : "Guidance" }
@@ -50,8 +49,6 @@ export function tabTitle(routeId: DashboardRouteId, isAdmin: boolean) {
       return "Green city planning";
     case "announcements":
       return isAdmin ? "Public notices" : "Service notices";
-    case "metadata":
-      return "Service data";
     case "users":
       return "Registered users";
     case "broadcast":
@@ -77,8 +74,6 @@ export function tabDescription(routeId: DashboardRouteId, isAdmin: boolean) {
       return "Use aggregated profiles to support greener operational planning and service decisions.";
     case "announcements":
       return "Read published notices and official updates from the local authority.";
-    case "metadata":
-      return "Review the accepted categories and fields used by the sustainability service forms.";
     case "users":
       return "See who currently has access to the citizen service platform.";
     case "broadcast":

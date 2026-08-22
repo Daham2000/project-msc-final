@@ -6,7 +6,6 @@ export type DashboardRouteId =
   | "citizen"
   | "city"
   | "announcements"
-  | "metadata"
   | "users"
   | "broadcast";
 
@@ -22,5 +21,6 @@ export interface DashboardNavItem {
   icon: AppIconName;
   path: string;
   adminOnly?: boolean;
+  citizenOnly?: boolean;
   group: DashboardNavGroup;
 }
