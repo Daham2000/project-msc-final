@@ -62,7 +62,7 @@ uniformly random and unrelated to the other columns. Every transport mode averag
 (energy R2 = -0.06, carbon R2 = 0.02).
 
 `scripts/rebuild_dataset.py` keeps every observed column and recomputes the two target
-columns from the emission equations in `app/services/domain_model.py` (DEFRA/IPCC
+columns from the emission equations in `app/ml/domain_model.py` (DEFRA/IPCC
 per-passenger-km factors, a 0.475 kgCO2/kWh grid factor, and travel distance derived
 from work, shopping, and event hours minus the distance already walked). It also clears
 `Charging_Station_Usage` for non-EV citizens, where the flag was meaningless.
@@ -78,20 +78,52 @@ python scripts/rebuild_dataset.py
 ```text
 project/
 ├── app/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── routes.py
-│   ├── data/
-│   │   └── sri_lanka_cities.json
-│   └── services/
-│       ├── auth_service.py
-│       ├── data_utils.py
-│       ├── database_service.py
-│       ├── domain_model.py
-│       ├── location_service.py
-│       ├── ml.py
-│       ├── recommendations.py
-│       └── smart_city_service.py
+│   ├── __init__.py                    # create_app() application factory
+│   ├── config.py                      # environment-driven settings
+│   ├── extensions.py                  # builds and registers the services
+│   ├── cors.py                        # CORS policy for the SPA
+│   ├── api/                           # HTTP layer (thin views)
+│   │   ├── __init__.py
+│   │   └── v1/
+│   │       ├── __init__.py            # /api/v1 blueprint composition
+│   │       ├── dependencies.py        # service accessors used by views
+│   │       ├── meta.py                # /cities, /health, /metadata
+│   │       ├── auth.py                # /auth/register, /auth/login, /auth/me
+│   │       ├── predictions.py         # /predict/*, /dashboard, /insights
+│   │       ├── announcements.py       # /announcements + SSE stream
+│   │       └── admin.py               # /admin/*
+│   ├── core/                          # cross-cutting concerns
+│   │   ├── errors.py                  # AppError / ValidationError / AuthError
+│   │   └── security.py                # login_required, token extraction
+│   ├── models/                        # DATABASE DESIGN - one class per entity
+│   │   ├── base.py                    # document <-> object conversion helpers
+│   │   ├── enums.py                   # UserRole, AudienceRole, AudienceScope
+│   │   ├── user.py                    # User, UserProfile
+│   │   └── announcement.py            # Announcement, AnnouncementAuthor
+│   ├── repositories/                  # the only layer issuing Mongo queries
+│   │   ├── base_repository.py
+│   │   ├── user_repository.py
+│   │   └── announcement_repository.py
+│   ├── database/
+│   │   ├── connection.py              # MongoConnection (client + ping)
+│   │   └── indexes.py                 # index definitions and backfills
+│   ├── services/                      # business rules and validation
+│   │   ├── auth_service.py
+│   │   ├── user_service.py
+│   │   ├── announcement_service.py
+│   │   ├── location_service.py
+│   │   ├── recommendation_service.py
+│   │   └── smart_city_service.py
+│   ├── ml/                            # dataset, equations, and models
+│   │   ├── dataset.py                 # CSV loading and column definitions
+│   │   ├── domain_model.py            # physical energy/carbon equations
+│   │   ├── encoders.py                # FeatureEncoder
+│   │   ├── linear_algebra.py          # Gauss-Jordan solver
+│   │   ├── regressors.py              # RidgeRegressor, KnnRegressor
+│   │   ├── metrics.py                 # MAE / RMSE / R2
+│   │   └── trainer.py                 # TrainedRegressionModel
+│   └── data/
+│       └── sri_lanka_cities.json
 ├── scripts/
 │   └── rebuild_dataset.py
 ├── .env.example
@@ -333,7 +365,7 @@ On the v2 dataset both targets select ridge regression, reaching R2 = 0.90 for e
 R2 = 0.85 for carbon.
 
 Each prediction is then blended with its physical estimate from
-`app/services/domain_model.py` (60% model, 40% equation) and clipped to 0.55x-1.75x of
+`app/ml/domain_model.py` (60% model, 40% equation) and clipped to 0.55x-1.75x of
 that estimate. This keeps the behavioural signal the model learns while guaranteeing that
 a walker is never charged for vehicle emissions and that no linear extrapolation returns
 a negative or implausible value.

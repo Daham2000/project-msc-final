@@ -24,24 +24,31 @@ flowchart LR
 
     subgraph api["Application Layer"]
         flask[Flask App\nrun.py -> create_app()]
-        routes[API Routes Blueprint\n/api/v1/*]
+        routes[API Blueprints\n/api/v1/*]
         cors[CORS Middleware]
         authsvc[AuthService\nSigned bearer tokens]
-        dbsvc[DatabaseService]
+        usersvc[UserService]
+        annsvc[AnnouncementService]
+        repos[Repositories\nUser + Announcement]
+        models[Models\nUser + Announcement documents]
         smartsvc[SmartCityService]
-        recsvc[Recommendations Module]
+        recsvc[Recommendation Module]
 
         flask --> routes
         flask --> cors
         routes --> authsvc
-        routes --> dbsvc
+        routes --> usersvc
+        routes --> annsvc
+        usersvc --> repos
+        annsvc --> repos
+        repos --> models
         routes --> smartsvc
         smartsvc --> recsvc
     end
 
     subgraph ml["Prediction and Analytics Layer"]
         dataset[CSV Dataset\nsmart_city_citizen_activity.csv]
-        loader[Data Utils\nCSV parsing + category collection]
+        loader[Dataset Loader\nCSV parsing + category collection]
         encoder[FeatureEncoder\nNormalization + one-hot encoding]
         ridge[Ridge Regressor]
         knn[Weighted KNN Regressor]
@@ -70,8 +77,8 @@ flowchart LR
 
         mongo --> users
         mongo --> announcements
-        dbsvc --> indexes
-        dbsvc --> adminseed
+        repos --> indexes
+        usersvc --> adminseed
     end
 
     citizen --> browser
@@ -81,13 +88,14 @@ flowchart LR
     authctx -->|Login, register, /me| routes
     ssehook -->|SSE /announcements/stream| routes
 
-    authsvc -->|Verify token + roles| dbsvc
-    dbsvc --> mongo
-    dbsvc --> users
-    dbsvc --> announcements
+    authsvc -->|Verify token + roles| usersvc
+    repos --> mongo
+    repos --> users
+    repos --> announcements
 
     routes -->|Predictions, summary,\nmetadata, recommendations| smartsvc
-    routes -->|Users + announcements| dbsvc
+    routes -->|Registration + login| usersvc
+    routes -->|Notices + live stream| annsvc
 ```
 
 ## Runtime Flow
@@ -160,12 +168,17 @@ sequenceDiagram
 - `frontend/src/auth/AuthContext.tsx`: manages login state, token persistence, and `/auth/me` bootstrap.
 - `frontend/src/features/dashboard/DashboardView.tsx`: main authenticated workspace for citizen and admin flows.
 - `frontend/src/hooks/useAnnouncementNotifications.ts`: subscribes citizens to live announcement updates over Server-Sent Events.
-- `app/routes.py`: exposes REST endpoints and the SSE announcement stream.
-- `app/services/auth_service.py`: signs and verifies bearer tokens and enforces role-based access.
-- `app/services/database_service.py`: owns MongoDB access for users and announcements, including TTL cleanup and default admin seeding.
+- `app/api/v1/`: exposes REST endpoints as one blueprint per resource, including the SSE announcement stream in `announcements.py`.
+- `app/core/security.py`: extracts the bearer token, loads the caller, and enforces role-based access via `login_required`.
+- `app/services/auth_service.py`: signs and verifies bearer tokens.
+- `app/models/`: the database design - `User`/`UserProfile` and `Announcement`/`AnnouncementAuthor` define the document shape and own password hashing and serialisation.
+- `app/repositories/`: the only layer that issues MongoDB queries; translates documents to and from the model classes.
+- `app/database/`: owns the MongoDB connection plus index and TTL definitions.
+- `app/services/user_service.py`: registration validation, authentication, and default admin seeding.
+- `app/services/announcement_service.py`: audience validation, city targeting, and expiry cleanup.
 - `app/services/smart_city_service.py`: loads the dataset, trains in-memory models, produces predictions, and aggregates dashboard metrics.
-- `app/services/ml.py`: contains feature encoding, ridge regression, weighted KNN, and model selection by RMSE.
-- `app/services/recommendations.py`: converts prediction outputs into citizen guidance and city-level actions.
+- `app/ml/`: feature encoding, ridge regression, weighted KNN, evaluation metrics, and model selection by RMSE.
+- `app/services/recommendation_service.py`: converts prediction outputs into citizen guidance and city-level actions.
 
 ## Architecture Notes
 

@@ -10,11 +10,6 @@ from pathlib import Path
 from typing import Dict, Iterable, List
 
 
-ISLAND_WIDE = "island_wide"
-CITY_SCOPE = "cities"
-AUDIENCE_SCOPES = {ISLAND_WIDE, CITY_SCOPE}
-
-
 class LocationService:
     def __init__(self, dataset_path: str):
         path = Path(dataset_path)

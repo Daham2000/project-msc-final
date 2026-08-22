@@ -1,19 +1,19 @@
 from collections import Counter
 from typing import Dict, List
 
-from .data_utils import (
+from ..ml import (
     CARBON_TARGET,
     CATEGORICAL_FIELDS,
     ENERGY_TARGET,
     IDENTIFIER_FIELD,
     NUMERIC_FIELDS,
+    TrainedRegressionModel,
     average,
     collect_categories,
     load_dataset,
 )
-from .domain_model import carbon_footprint_kg, home_energy_kwh
-from .ml import TrainedRegressionModel
-from .recommendations import citizen_recommendations, sustainability_band
+from ..ml.domain_model import carbon_footprint_kg, home_energy_kwh
+from .recommendation_service import citizen_recommendations, sustainability_band
 
 
 ENERGY_FEATURES = list(NUMERIC_FIELDS)

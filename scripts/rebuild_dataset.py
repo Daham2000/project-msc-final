@@ -13,7 +13,7 @@ calories) and recomputes only:
   * Home_Energy_Consumption_kWh
   * Carbon_Footprint_kgCO2
 
-using the equations in app/services/domain_model.py, plus a small per-citizen
+using the equations in app/ml/domain_model.py, plus a small per-citizen
 measurement noise so the targets are not a closed-form function of the inputs.
 
 Usage:
@@ -27,7 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.services.domain_model import carbon_footprint_kg, home_energy_kwh  # noqa: E402
+from app.ml.domain_model import carbon_footprint_kg, home_energy_kwh  # noqa: E402
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
