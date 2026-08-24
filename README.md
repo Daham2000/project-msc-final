@@ -159,6 +159,24 @@ This project already includes a `.venv` in the workspace. If you want to install
 
 The API runs on `http://127.0.0.1:5000`.
 
+## Testing
+
+116 unit tests: 70 backend (pytest) and 46 frontend (Vitest).
+
+```powershell
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.venv\Scripts\python.exe -m pytest
+```
+
+```powershell
+cd frontend
+npm test
+```
+
+See [TESTING.md](TESTING.md) for the full guide: what each suite covers, how to
+run a single test, the mutation checks used to prove the tests can fail, and
+what is deliberately out of scope.
+
 ## Authentication Flow
 
 ### 1. Register a citizen
